@@ -173,13 +173,13 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
   /**
    * Add a pulse TX
    * expects :
-   *      {
-   *        "hashData" : "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
-   *        "signs": {
-   *          "a": ["9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809", "", "9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809"],
-   *          "z": ["78132684712638457631278", "78132684712638457631278", "0", "78132684712638457631278", "78132684712638457631278"]
-   *        }
-   *      }
+   * {
+   * "hashData" : "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
+   * "signs": {
+   * "a": ["9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809", "", "9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809"],
+   * "z": ["78132684712638457631278", "78132684712638457631278", "0", "78132684712638457631278", "78132684712638457631278"]
+   * }
+   * }
    *
    * @return tx id
    */
@@ -195,6 +195,111 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
         s"""{
            |  "success": true,
            |  "txId": "${adaptor.addPulse(utils.toByteArray(hashData), (listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray))}"
+           |}""".stripMargin
+      ).as("application/json")
+
+    } catch {
+      case e: Throwable => exception(e)
+    }
+  }
+
+
+  /**
+   * @return list of current consuls
+   */
+  def getConsuls: Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
+    try {
+      Ok(
+        s"""{
+           |  "success": true,
+           |  "consuls": ${adaptor.getConsuls}
+           |}""".stripMargin
+      ).as("application/json")
+
+    } catch {
+      case e: Throwable => exception(e)
+    }
+  }
+
+  /**
+   * @return last round id
+   */
+  def lastRound: Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
+    try {
+      Ok(
+        s"""{
+           |  "success": true,
+           |  "lastRound": ${adaptor.getLastRound}
+           |}""".stripMargin
+      ).as("application/json")
+
+    } catch {
+      case e: Throwable => exception(e)
+    }
+  }
+
+  /**
+   * update consuls
+   * expects :
+   * {
+   * "updateConsuls" : ["f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
+   *                    "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
+   *                    "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809"]
+   * "signs": {
+   * "a": ["9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809", "", "9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809"],
+   * "z": ["78132684712638457631278", "78132684712638457631278", "0", "78132684712638457631278", "78132684712638457631278"]
+   * }
+   * }
+   *
+   * @return tx id
+   */
+  def updateConsuls(): Action[Json] = Action(circe.json) { implicit request =>
+    try {
+      val newConsuls = request.body.hcursor.downField("newConsuls").as[Seq[String]].getOrElse(throw new Throwable("newConsuls field must exist"))
+      val signs = request.body.hcursor.downField("signs").as[Json].getOrElse(throw new Throwable("signs fields must exist"))
+      val listSigns_a = signs.hcursor.downField("a").as[Seq[String]].getOrElse(throw new Throwable("signed fields a must exist"))
+      val listSigns_z = signs.hcursor.downField("z").as[Seq[String]].getOrElse(throw new Throwable("signed fields z must exist")).map(BigInt(_).bigInteger)
+
+      if (listSigns_a.size != 5 || listSigns_z.size != 5) throw new Throwable("in signed fields a and z must be 5 object")
+      Ok(
+        s"""{
+           |  "success": true,
+           |  "txId": "${adaptor.updateConsuls((listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray), newConsuls)}"
+           |}""".stripMargin
+      ).as("application/json")
+
+    } catch {
+      case e: Throwable => exception(e)
+    }
+  }
+
+  /**
+   * update Oracles
+   * expects :
+   * {
+   * "newOracles" : ["f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
+   *                 "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
+   *                 "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809"]
+   * "signs": {
+   * "a": ["9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809", "", "9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809"],
+   * "z": ["78132684712638457631278", "78132684712638457631278", "0", "78132684712638457631278", "78132684712638457631278"]
+   * }
+   * }
+   *
+   * @return tx id
+   */
+  def updateOracles(): Action[Json] = Action(circe.json) { implicit request =>
+    try {
+      val newOracles = request.body.hcursor.downField("newOracles").as[Seq[String]].getOrElse(throw new Throwable("newOracles field must exist"))
+      val signs = request.body.hcursor.downField("signs").as[Json].getOrElse(throw new Throwable("signs fields must exist"))
+      val listSigns_a = signs.hcursor.downField("a").as[Seq[String]].getOrElse(throw new Throwable("signed fields a must exist"))
+      val listSigns_z = signs.hcursor.downField("z").as[Seq[String]].getOrElse(throw new Throwable("signed fields z must exist")).map(BigInt(_).bigInteger)
+
+      if (listSigns_a.size != 5 || listSigns_z.size != 5) throw new Throwable("in signed fields a and z must be 5 object")
+      Ok(
+        s"""{
+           |  "success": true,
+           |  "txId": "${adaptor.updateOracles((listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray), newOracles)}"
            |}""".stripMargin
       ).as("application/json")
 
