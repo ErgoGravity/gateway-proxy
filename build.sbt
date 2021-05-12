@@ -15,7 +15,7 @@ scalaVersion := "2.12.10"
 
 libraryDependencies ++= Seq( jdbc , ehcache , ws , specs2 % Test , guice )
 libraryDependencies ++= Seq(
-  "org.ergoplatform" %% "ergo-appkit" % "3.3.3",
+  "org.ergoplatform" %% "ergo-appkit" % "4.0.3",
   "org.scalaj" %% "scalaj-http" % "2.4.2",
   "com.dripower" %% "play-circe" % "2712.0"
 )

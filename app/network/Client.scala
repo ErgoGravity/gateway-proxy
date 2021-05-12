@@ -3,28 +3,18 @@ package network
 
 import helpers.{Configs, Utils}
 import javax.inject.{Inject, Singleton}
+import org.ergoplatform.appkit.{Address, ErgoClient, InputBox, JavaHelpers, NetworkType, RestApiErgoClient}
 
-import org.ergoplatform.appkit.{ErgoClient, JavaHelpers, NetworkType, RestApiErgoClient}
+import scala.collection.JavaConverters._
 import play.api.Logger
-import sigmastate.interpreter.CryptoConstants.{dlogGroup, groupOrder}
-import sigmastate.eval._
-import special.sigma.GroupElement
-import java.math.BigInteger
+
+import scala.concurrent.BlockContext
 
 @Singleton
 class Client @Inject()(utils: Utils) {
   private val logger: Logger = Logger(this.getClass)
   private val defaultHeader: Seq[(String, String)] = Seq[(String, String)](("Content-Type", "application/json"), ("api_key", Configs.nodeApiKey))
   private var client: ErgoClient = _
-
-  private val secureRandom = new java.security.SecureRandom
-
-  /**
-   * Generate a secure random bigint
-   *
-   * @return BigInt
-   */
-  def randBigInt: BigInt = new BigInteger(256, secureRandom)
 
   /**
    * Sets client for the entire app when the app starts
@@ -33,7 +23,7 @@ class Client @Inject()(utils: Utils) {
    */
   def setClient(): Long = {
     try {
-      client = RestApiErgoClient.create(Configs.nodeUrl, NetworkType.MAINNET, Configs.nodeApiKey)
+      client = RestApiErgoClient.create(Configs.nodeUrl, Configs.networkType, Configs.nodeApiKey)
       client.execute(ctx => {
         ctx.getHeight
       })
@@ -45,6 +35,10 @@ class Client @Inject()(utils: Utils) {
     }
   }
 
+  def getClient: ErgoClient = {
+    client
+  }
+
   /**
    * @return current height of the blockchain
    */
@@ -53,52 +47,13 @@ class Client @Inject()(utils: Utils) {
   }
 
   /**
-   * signs input message
-   *
-   * @param msg message to sign String
-   * @param sk  secret key
-   * @return tuple sign message
-   *
-   * @note for convert second section sign (BigInt) to ErgoValue, use Type `special.sigma.BigInt` and function JavaHelpers.SigmaDsl.BigInt(z.bigInteger)
+   * @param address :Address get a valid address
+   * @return List of input address boxes
    */
-  def sign(msg: String, sk: String): (String, String) = {
-    val toSignBytes = utils.toByteArray(msg)
-    val r = randBigInt
-    val g: GroupElement = dlogGroup.generator
-    val a: GroupElement = g.exp(r.bigInteger)
-    val z = (r + BigInt(sk, 16) * BigInt(scorex.crypto.hash.Blake2b256(toSignBytes))) % groupOrder
-    (utils.toHexString(a.getEncoded.toArray), z.toString(16))
+  def getUnspentBox(address: Address): List[InputBox] = {
+    client.execute(ctx =>
+      ctx.getUnspentBoxesFor(address).asScala.toList
+    )
   }
 
-  /**
-   * verifies signature against msg and pk
-   *
-   * @param msg    message
-   * @param signStringA first section of signature (a: GroupElement)
-   * @param signStringZ second section of signature (z: BigInt)
-   * @param pkString     public key
-   * @return result of verification
-   */
-
-  def verify(msg: String, signStringA: String, signStringZ: String, pkString: String): Boolean = {
-    val pk = JavaHelpers.decodeStringToGE(pkString)
-    val e: Array[Byte] = scorex.crypto.hash.Blake2b256(utils.toByteArray(msg)) // weak Fiat-Shamir
-    val eInt = BigInt(e) // challenge as big integer
-    val g: GroupElement = dlogGroup.generator
-    val l = g.exp(BigInt(signStringZ, 16).bigInteger)
-    val r = JavaHelpers.decodeStringToGE(signStringA).multiply(pk.exp(eInt.bigInteger))
-    if (l == r) true else false
-  }
-
-  /**
-   * get public key from secret key
-   *
-   * @param sk secret key
-   * @return public key
-   */
-  def getPkFromSk(sk: String): String = {
-    val skBig = BigInt(sk, 16)
-    val pk = dlogGroup.exponentiate(dlogGroup.generator, skBig.bigInteger)
-    utils.toHexString(JavaHelpers.SigmaDsl.GroupElement(pk).getEncoded.toArray)
-  }
 }
