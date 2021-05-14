@@ -147,16 +147,17 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
     def createNewGravityBox(lastGravityBox: InputBox, signs: (Array[GroupElement], Array[special.sigma.BigInt]), consuls: Seq[String]): OutBox = {
       client.getClient.execute(ctx => {
         val txB = ctx.newTxBuilder()
-        val bftValue = ErgoValue.of(3)
+        val bftValue = ErgoValue.of(3.toLong)
         val consulsAddress = consuls.map(Address.create(_).getPublicKeyGE.getEncoded)
         val consulsValue = ErgoValue.of(IndexedSeq(consulsAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
+        val newRoundId = ErgoValue.of(lastGravityBox.getRegisters.get(5).getValue.asInstanceOf[Long] + 1)
 
         txB.outBoxBuilder
           .value(lastGravityBox.getValue)
           .tokens(new ErgoToken(lastGravityBox.getTokens.get(0).getId, 1))
-          .registers(bftValue, consulsValue, signs_a, signs_z)
+          .registers(bftValue, consulsValue, signs_a, signs_z, newRoundId)
           .contract(new ErgoTreeContract(Address.create(gatewayContracts.gravityAddress).getErgoAddress.script))
           .build()
       })
@@ -187,12 +188,66 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
 
       val signed = prover.sign(tx)
       logger.debug(s"consulsTx data ${signed.toJson(false)}")
-      val pulseTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
-      logger.info(s"sending consuls tx ${pulseTxId}")
-      pulseTxId
+      val consulsTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
+      logger.info(s"sending consuls tx ${consulsTxId}")
+      consulsTxId
     })
   }
 
+  def updateOracles(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newOracles: Seq[String], sendTransaction: Boolean= false): String = {
+    val lastOracleBox = getSpecBox("oracle")
+    val lastConsulsBox = getSpecBox("gravity")
+    val proxyBox = getSpecBox("proxy", random = true)
+
+    def createNewOracleBox(lastOracleBox: InputBox, signs: (Array[GroupElement], Array[special.sigma.BigInt]), oracles: Seq[String]): OutBox = {
+      client.getClient.execute(ctx => {
+        val txB = ctx.newTxBuilder()
+        val bftValue = ErgoValue.of(3.toLong)
+        val oraclesAddress = oracles.map(Address.create(_).getPublicKeyGE.getEncoded)
+        val oraclesValue = ErgoValue.of(IndexedSeq(oraclesAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
+        val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
+        val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
+
+        txB.outBoxBuilder
+          .value(lastOracleBox.getValue)
+          .tokens(new ErgoToken(lastOracleBox.getTokens.get(0).getId, 1))
+          .registers(bftValue, oraclesValue, signs_a, signs_z)
+          .contract(new ErgoTreeContract(Address.create(gatewayContracts.oracleAddress).getErgoAddress.script))
+          .build()
+      })
+    }
+
+    def createProxyBox(feeBox: InputBox): OutBox = {
+      client.getClient.execute(ctx => {
+        val txB = ctx.newTxBuilder()
+        var newProxyBox = txB.outBoxBuilder()
+        newProxyBox = newProxyBox.value(feeBox.getValue - Configs.defaultTxFee)
+        newProxyBox = newProxyBox.tokens(feeBox.getTokens.asScala.toList: _*)
+        newProxyBox.contract(new ErgoTreeContract(Configs.proxyAddress.getErgoAddress.script))
+        newProxyBox.build()
+      })
+    }
+
+    client.getClient.execute(ctx => {
+      val prover = ctx.newProverBuilder()
+        .withDLogSecret(Configs.proxySecret)
+        .build()
+
+      val txB = ctx.newTxBuilder()
+      val tx = txB.boxesToSpend(Seq(lastOracleBox, proxyBox).asJava)
+      .outputs(createNewOracleBox(lastOracleBox, signs, newOracles), createProxyBox(proxyBox))
+      .fee(Configs.defaultTxFee)
+      .withDataInputs(Seq(lastConsulsBox).asJava)
+      .sendChangeTo(Configs.proxyAddress.getErgoAddress)
+      .build()
+
+      val signed = prover.sign(tx)
+      logger.debug(s"oraclesTx data ${signed.toJson(false)}")
+      val oraclesTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
+      logger.info(s"sending oracles tx ${oraclesTxId}")
+      oraclesTxId
+    })
+  }
 
   /**
    * sign input message
@@ -204,12 +259,17 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
    * @note for convert second section sign (BigInt) to ErgoValue, use Type `special.sigma.BigInt` and function JavaHelpers.SigmaDsl.BigInt(z.bigInteger)
    */
   def sign(msg: String, sk: String): (String, String) = {
-    val toSignBytes = utils.toByteArray(msg)
-    val r = utils.randBigInt
-    val g: GroupElement = dlogGroup.generator
-    val a: GroupElement = g.exp(r.bigInteger)
-    val z = (r + BigInt(sk, 16) * BigInt(scorex.crypto.hash.Blake2b256(toSignBytes))) % groupOrder
-    if (z.bigInteger.bitLength() < 256) (utils.toHexString(a.getEncoded.toArray), z.toString(16)) else sign(msg, sk)
+    while(true) {
+      val toSignBytes = utils.toByteArray(msg)
+      val r = utils.randBigInt
+      val g: GroupElement = dlogGroup.generator
+      val a: GroupElement = g.exp(r.bigInteger)
+      val z = (r + BigInt(sk, 16) * BigInt(scorex.crypto.hash.Blake2b256(toSignBytes))) % groupOrder
+      if (z.bigInteger.bitLength() < 256) {
+        return (utils.toHexString(a.getEncoded.toArray), z.toString(16))
+      }
+    }
+    ("", "")
   }
 
   /**
