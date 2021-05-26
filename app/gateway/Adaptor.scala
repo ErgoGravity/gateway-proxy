@@ -2,8 +2,8 @@ package gateway
 
 import javax.inject.Inject
 import play.api.Logger
-
 import java.security.SecureRandom
+
 import scala.collection.JavaConverters._
 import network.{Client, Explorer}
 import sigmastate.interpreter.CryptoConstants.{dlogGroup, groupOrder}
@@ -12,6 +12,7 @@ import special.sigma.GroupElement
 import org.ergoplatform.appkit.{Address, ErgoToken, ErgoType, ErgoValue, InputBox, JavaHelpers, OutBox}
 import helpers.{Configs, Utils}
 import org.ergoplatform.appkit.impl.ErgoTreeContract
+import sigmastate.basics.DLogProtocol.DLogProverInput
 import special.collection.Coll
 
 
@@ -295,12 +296,12 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
    * get public key from secret key
    *
    * @param sk secret key
-   * @return public key
+   * @return Address and Public key
    */
-  def getPkFromSk(sk: String): String = {
+  def getPkFromSk(sk: String): (String, String) = {
     val skBig = BigInt(sk, 16)
-    val pk = dlogGroup.exponentiate(dlogGroup.generator, skBig.bigInteger)
-    utils.toHexString(JavaHelpers.SigmaDsl.GroupElement(pk).getEncoded.toArray)
+    val address: Address = utils.getAddressFromSk(skBig.bigInteger)
+    (address.toString, utils.toHexString(address.getPublicKey.pkBytes))
   }
 
 }
