@@ -7,7 +7,7 @@ GET         /height                      controllers.ApiController.height
 GET         /numConfirmations/:id        controllers.ApiController.confNum(id: String)
 POST        /sign                        controllers.ApiController.sign
 POST        /verify                      controllers.ApiController.verify
-POST        /getPk                       controllers.ApiController.getPk
+POST        /getAddressDetail            controllers.ApiController.getAddressDetail
 
 GET         /adaptor/getLastPulseId            controllers.ApiController.getLastPulseId
 GET         /adaptor/getPreAddPulseInfo        controllers.ApiController.getPreAddPulseInfo
@@ -20,4 +20,3 @@ GET         /adaptor/lastRound                 controllers.ApiController.lastRou
 # Map static resources from the /public folder to the /assets URL path
 GET         /assets/*file                controllers.Assets.versioned(path="/public", file: Asset)
 
-      

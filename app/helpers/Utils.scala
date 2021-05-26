@@ -4,8 +4,9 @@ import java.io.{PrintWriter, StringWriter}
 import java.math.BigInteger
 
 import javax.inject.{Inject, Singleton}
-import org.ergoplatform.appkit.JavaHelpers
+import org.ergoplatform.appkit.{Address, JavaHelpers}
 import scorex.util.encode.Base16
+import sigmastate.basics.DLogProtocol.DLogProverInput
 import special.sigma.GroupElement
 
 @Singleton
@@ -37,4 +38,11 @@ class Utils @Inject()() {
    * @return BigInt
    */
   def randBigInt: BigInt = new BigInteger(256, secureRandom)
+
+  /**
+  *
+   * @param sk: Secret
+   * @return Address
+   */
+  def getAddressFromSk(sk: BigInteger) = new Address(JavaHelpers.createP2PKAddress(DLogProverInput(sk).publicImage, Configs.addressEncoder.networkPrefix))
 }

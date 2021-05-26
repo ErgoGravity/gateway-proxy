@@ -114,18 +114,20 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
   }
 
   /**
-   * gets pk from sk
+   * gets pk and address from sk
    * expects sk field
    *
    * @return verification result
    */
-  def getPk: Action[Json] = Action(circe.json) { implicit request =>
+  def getAddressDetail: Action[Json] = Action(circe.json) { implicit request =>
     try {
       val sk = request.body.hcursor.downField("sk").as[String].getOrElse(throw new Throwable("sk field must exist"))
+      val addr_pk = adaptor.getPkFromSk(sk)
       Ok(
         s"""{
            |  "success": true,
-           |  "pk": "${adaptor.getPkFromSk(sk)}"
+           |  "address": "${addr_pk._1}",
+           |  "pk": "${addr_pk._2}"
            |}""".stripMargin
       ).as("application/json")
 
