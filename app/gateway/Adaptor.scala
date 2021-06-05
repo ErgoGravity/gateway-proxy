@@ -111,24 +111,32 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
       })
     }
 
-    client.getClient.execute(ctx => {
-      val prover = ctx.newProverBuilder()
-        .withDLogSecret(Configs.proxySecret)
-        .build()
-      val outputs: Seq[OutBox] = Seq(createPulseBox(lastPulseBox, hashData, signs)) ++ createTokenRepoAndSignalBox(tokenRepoBox, hashData) :+ createProxyBox(proxyBox)
-      val txB = ctx.newTxBuilder()
-      val tx = txB.boxesToSpend(Seq(lastPulseBox, tokenRepoBox, proxyBox).asJava)
-        .fee(Configs.defaultTxFee)
-        .outputs(outputs: _*)
-        .sendChangeTo(Configs.proxyAddress.getErgoAddress)
-        .withDataInputs(Seq(lastOracleBox).toList.asJava)
-        .build()
-      val signed = prover.sign(tx)
-      logger.debug(s"pulseTx data ${signed.toJson(false)}")
-      val pulseTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
-      logger.info(s"sending pulse tx ${pulseTxId}")
-      pulseTxId
-    })
+    val signalCreated = lastPulseBox.getRegisters.get(5).getValue.asInstanceOf[Boolean]
+
+    if (signalCreated) {
+      client.getClient.execute(ctx => {
+        val prover = ctx.newProverBuilder()
+          .withDLogSecret(Configs.proxySecret)
+          .build()
+        val outputs: Seq[OutBox] = Seq(createPulseBox(lastPulseBox, hashData, signs)) ++ createTokenRepoAndSignalBox(tokenRepoBox, hashData) :+ createProxyBox(proxyBox)
+        val txB = ctx.newTxBuilder()
+        val tx = txB.boxesToSpend(Seq(lastPulseBox, tokenRepoBox, proxyBox).asJava)
+          .fee(Configs.defaultTxFee)
+          .outputs(outputs: _*)
+          .sendChangeTo(Configs.proxyAddress.getErgoAddress)
+          .withDataInputs(Seq(lastOracleBox).toList.asJava)
+          .build()
+        val signed = prover.sign(tx)
+        logger.debug(s"pulseTx data ${signed.toJson(false)}")
+        val pulseTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
+        logger.info(s"sending pulse tx ${pulseTxId}")
+        pulseTxId
+      })
+    }
+    else {
+      logger.info(s"there is an active pulse box, can't create a new pulse box")
+      throw new Throwable("there is an active pulse box, can't create a new pulse box")
+    }
   }
 
   def getConsuls: Array[String] = {
