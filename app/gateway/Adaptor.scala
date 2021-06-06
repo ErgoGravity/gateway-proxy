@@ -12,13 +12,13 @@ import special.sigma.GroupElement
 import org.ergoplatform.appkit.{Address, ErgoToken, ErgoType, ErgoValue, InputBox, JavaHelpers, OutBox}
 import helpers.{Configs, Utils}
 import org.ergoplatform.appkit.impl.ErgoTreeContract
-import sigmastate.basics.DLogProtocol.DLogProverInput
 import special.collection.Coll
 
 
-class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewayContracts: GatewayContracts){
+class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
 
   private val logger: Logger = Logger(this.getClass)
+  private val gatewayAddresses = client.gatewayContractsInterface.get
   private def selectRandomBox(seq: Seq[InputBox]): Option[InputBox] = {
     val random = new SecureRandom()
     new scala.util.Random(random).shuffle(seq).headOption
@@ -27,13 +27,13 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
   private def getSpecBox(typeBox: String, random: Boolean = false): InputBox = {
     val boxData = typeBox match {
       case "pulse" =>
-        ("pulse", gatewayContracts.pulseAddress, GatewayContracts.pulseTokenId)
+        ("pulse", gatewayAddresses.pulseAddress, GatewayContracts.pulseTokenId)
       case "oracle" =>
-        ("oracle", gatewayContracts.oracleAddress, GatewayContracts.oracleTokenId)
+        ("oracle", gatewayAddresses.oracleAddress, GatewayContracts.oracleTokenId)
       case "tokenRepo" =>
-        ("tokenRepo", gatewayContracts.tokenRepoAddress, GatewayContracts.tokenRepoTokenId)
+        ("tokenRepo", gatewayAddresses.tokenRepoAddress, GatewayContracts.tokenRepoTokenId)
       case "gravity" =>
-        ("gravity", gatewayContracts.gravityAddress, GatewayContracts.gravityTokenId)
+        ("gravity", gatewayAddresses.gravityAddress, GatewayContracts.gravityTokenId)
       case "proxy" =>
         ("proxy", Configs.proxyAddress.getErgoAddress.toString, "")
     }
@@ -81,7 +81,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
           ErgoValue.of(lastPulseBox.getRegisters.get(3).getValue.asInstanceOf[Long] + 1),
           ErgoValue.of(0))
         newPulseBox = newPulseBox.registers(regs: _*)
-        newPulseBox.contract(new ErgoTreeContract(Address.create(gatewayContracts.pulseAddress).getErgoAddress.script))
+        newPulseBox.contract(new ErgoTreeContract(Address.create(gatewayAddresses.pulseAddress).getErgoAddress.script))
         newPulseBox.build()
       })
     }
@@ -92,7 +92,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
         var newTokenRepoBox = txB.outBoxBuilder()
         newTokenRepoBox = newTokenRepoBox.value(lastRepoBox.getValue - Configs.signalBoxValue)
         newTokenRepoBox = newTokenRepoBox.tokens(new ErgoToken(lastRepoBox.getTokens.get(0).getId, lastRepoBox.getTokens.get(0).getValue - 1))
-        newTokenRepoBox.contract(new ErgoTreeContract(Address.create(gatewayContracts.tokenRepoAddress).getErgoAddress.script))
+        newTokenRepoBox.contract(new ErgoTreeContract(Address.create(gatewayAddresses.tokenRepoAddress).getErgoAddress.script))
         newTokenRepoBox.build()
       })
     }
@@ -107,7 +107,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
         newSignalBox = newSignalBox.value(Configs.signalBoxValue)
         newSignalBox = newSignalBox.tokens(new ErgoToken(lastRepoBox.getTokens.get(0).getId, 1))
         newSignalBox = newSignalBox.registers(ErgoValue.of(hashData))
-        newSignalBox.contract(new ErgoTreeContract(Address.create(gatewayContracts.signalAddress).getErgoAddress.script))
+        newSignalBox.contract(new ErgoTreeContract(Address.create(gatewayAddresses.signalAddress).getErgoAddress.script))
         newSignalBox.build()
       })
     }
@@ -179,7 +179,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
           .value(lastGravityBox.getValue)
           .tokens(new ErgoToken(lastGravityBox.getTokens.get(0).getId, 1))
           .registers(bftValue, consulsValue, signs_a, signs_z, newRoundId)
-          .contract(new ErgoTreeContract(Address.create(gatewayContracts.gravityAddress).getErgoAddress.script))
+          .contract(new ErgoTreeContract(Address.create(gatewayAddresses.gravityAddress).getErgoAddress.script))
           .build()
       })
     }
@@ -233,7 +233,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
           .value(lastOracleBox.getValue)
           .tokens(new ErgoToken(lastOracleBox.getTokens.get(0).getId, 1))
           .registers(bftValue, oraclesValue, signs_a, signs_z)
-          .contract(new ErgoTreeContract(Address.create(gatewayContracts.oracleAddress).getErgoAddress.script))
+          .contract(new ErgoTreeContract(Address.create(gatewayAddresses.oracleAddress).getErgoAddress.script))
           .build()
       })
     }

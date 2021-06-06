@@ -62,7 +62,6 @@ object GetRequest{
   def httpGetWithError(url: String, headers: Seq[(String, String)] = defaultHeader): Either[Throwable, Json] = {
     Try {
       val responseReq = GravityHttp(url).headers(defaultHeader).asString
-      println(responseReq.body)
       (responseReq.code, responseReq)
     }
     match{

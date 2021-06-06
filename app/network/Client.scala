@@ -1,20 +1,21 @@
 package network
 
 
+import gateway.GatewayContracts
 import helpers.{Configs, Utils}
 import javax.inject.{Inject, Singleton}
-import org.ergoplatform.appkit.{Address, ErgoClient, InputBox, JavaHelpers, NetworkType, RestApiErgoClient}
+import org.ergoplatform.appkit.{Address, BlockchainContext, ErgoClient, InputBox, RestApiErgoClient}
 
 import scala.collection.JavaConverters._
 import play.api.Logger
 
-import scala.concurrent.BlockContext
-
 @Singleton
 class Client @Inject()(utils: Utils) {
   private val logger: Logger = Logger(this.getClass)
-  private val defaultHeader: Seq[(String, String)] = Seq[(String, String)](("Content-Type", "application/json"), ("api_key", Configs.nodeApiKey))
+  private val defaultHeader: Seq[(String, String)] = Seq[(String, String)](("Content-Type", "application/json"))
   private var client: ErgoClient = _
+
+  var gatewayContractsInterface: Option[GatewayContracts] = None
 
   /**
    * Sets client for the entire app when the app starts
@@ -25,6 +26,7 @@ class Client @Inject()(utils: Utils) {
     try {
       client = RestApiErgoClient.create(Configs.nodeUrl, Configs.networkType, Configs.nodeApiKey)
       client.execute(ctx => {
+        gatewayContractsInterface = Some(new GatewayContracts(ctx))
         ctx.getHeight
       })
 
