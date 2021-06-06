@@ -82,8 +82,11 @@ class GatewayContracts @Inject()(client: Client) {
        |  // To prevent placing two signal boxes in one transaction
        |  SELF.id == INPUTS(0).id,
        |
-       |  // There must be a msgHash in the R4 of the signal box
-       |  SELF.R4[Coll[Byte]].isDefined,  // TODO: In the future, we have to check the msgHash for the USER-SC.
+       |  // Expect pulseId to be in R4 of the signal box
+       |  SELF.R4[Long].isDefined,
+       |  // There must be data in the R5 of the signal box
+       |  // TODO: this data must be equal to msgHash in pulseId
+       |  SELF.R5[Coll[Byte]].isDefined,
        |
        |  // Id of first token in signal box must be equal to tokenRepoId with value 1
        |  SELF.tokens(0)._1 == tokenRepoId,
@@ -138,7 +141,7 @@ class GatewayContracts @Inject()(client: Client) {
        | val signs_z = OUTPUTS(0).R6[Coll[BigInt]].get
        |
        | val currentPulseId = SELF.R7[Long].get
-       | val signalCreated: Boolean = SELF.R8[Boolean].get
+       | val signalCreated: Int = SELF.R8[Int].get
        |
        | // Verify signs
        | val validateSign: Int = {(v: ((Coll[Byte], GroupElement), (GroupElement, BigInt))) => {
@@ -161,7 +164,7 @@ class GatewayContracts @Inject()(client: Client) {
        |    ))
        | }}
        |
-       | val verified = if (signalCreated) {
+       | val verified = if (signalCreated == 1) {
        |    // should to be box of oracle contract
        |    val dataInput = CONTEXT.dataInputs(0)
        |    // We Expect number of oracles that verified msgHash of in pulseId bigger than bftValue
@@ -185,7 +188,7 @@ class GatewayContracts @Inject()(client: Client) {
        |        publicCheckOutBoxes((SELF, OUTPUTS(0))),
        |        // We expect pulseId to be in R7 and increase pulseId in out box
        |        OUTPUTS(0).R7[Long].get == currentPulseId + 1,
-       |        OUTPUTS(0).R8[Boolean].get == false
+       |        OUTPUTS(0).R8[Int].get == 0
        |      ))
        |     }
        |     else false
@@ -199,7 +202,7 @@ class GatewayContracts @Inject()(client: Client) {
        |         SELF.R6[Coll[BigInt]].get == signs_z,
        |         // We expect pulseId to be in R7 and increase pulseId in out box
        |         OUTPUTS(0).R7[Long].get == currentPulseId,
-       |         OUTPUTS(0).R8[Boolean].get == true,
+       |         OUTPUTS(0).R8[Int].get == 1,
        |
        |         // Expect pulseId to be in R4 of the signal box
        |         OUTPUTS(2).R4[Long].get == currentPulseId,
