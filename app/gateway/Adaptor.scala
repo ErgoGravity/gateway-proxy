@@ -75,28 +75,40 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
         var newPulseBox = txB.outBoxBuilder()
         newPulseBox = newPulseBox.value(lastPulseBox.getValue)
         newPulseBox = newPulseBox.tokens(lastPulseBox.getTokens.asScala.toList: _*)
-        val regs = Seq(ErgoValue.of(hashData), ErgoValue.of(signs._1, ErgoType.groupElementType), ErgoValue.of(signs._2, ErgoType.bigIntType), ErgoValue.of(lastPulseBox.getRegisters.get(3).getValue.asInstanceOf[Long] + 1))
+        val regs = Seq(
+          ErgoValue.of(hashData),
+          ErgoValue.of(signs._1, ErgoType.groupElementType), ErgoValue.of(signs._2, ErgoType.bigIntType),
+          ErgoValue.of(lastPulseBox.getRegisters.get(3).getValue.asInstanceOf[Long] + 1),
+          ErgoValue.of(0))
         newPulseBox = newPulseBox.registers(regs: _*)
         newPulseBox.contract(new ErgoTreeContract(Address.create(gatewayContracts.pulseAddress).getErgoAddress.script))
         newPulseBox.build()
       })
     }
 
-    def createTokenRepoAndSignalBox(lastRepoBox: InputBox, hashData: Array[Byte]): Seq[OutBox] = {
+    def createTokenRepoBox(lastRepoBox: InputBox): OutBox = {
       client.getClient.execute(ctx => {
         val txB = ctx.newTxBuilder()
         var newTokenRepoBox = txB.outBoxBuilder()
         newTokenRepoBox = newTokenRepoBox.value(lastRepoBox.getValue - Configs.signalBoxValue)
         newTokenRepoBox = newTokenRepoBox.tokens(new ErgoToken(lastRepoBox.getTokens.get(0).getId, lastRepoBox.getTokens.get(0).getValue - 1))
         newTokenRepoBox.contract(new ErgoTreeContract(Address.create(gatewayContracts.tokenRepoAddress).getErgoAddress.script))
+        newTokenRepoBox.build()
+      })
+    }
 
-        var newSignalBox = txB.outBoxBuilder()
+    /*
+       TODO: this function can, used in add value to sub
+     */
+    @deprecated
+    def createSignalBox(lastRepoBox: InputBox, hashData: Array[Byte]): OutBox = {
+      client.getClient.execute(ctx => {
+        var newSignalBox = ctx.newTxBuilder().outBoxBuilder()
         newSignalBox = newSignalBox.value(Configs.signalBoxValue)
         newSignalBox = newSignalBox.tokens(new ErgoToken(lastRepoBox.getTokens.get(0).getId, 1))
         newSignalBox = newSignalBox.registers(ErgoValue.of(hashData))
         newSignalBox.contract(new ErgoTreeContract(Address.create(gatewayContracts.signalAddress).getErgoAddress.script))
-
-        Seq(newTokenRepoBox.build(), newSignalBox.build())
+        newSignalBox.build()
       })
     }
 
@@ -111,14 +123,14 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils, gatewa
       })
     }
 
-    val signalCreated = lastPulseBox.getRegisters.get(5).getValue.asInstanceOf[Boolean]
+    val signalCreated = lastPulseBox.getRegisters.get(5).getValue.asInstanceOf[Int]
 
-    if (signalCreated) {
+    if (signalCreated == 1) {
       client.getClient.execute(ctx => {
         val prover = ctx.newProverBuilder()
           .withDLogSecret(Configs.proxySecret)
           .build()
-        val outputs: Seq[OutBox] = Seq(createPulseBox(lastPulseBox, hashData, signs)) ++ createTokenRepoAndSignalBox(tokenRepoBox, hashData) :+ createProxyBox(proxyBox)
+        val outputs: Seq[OutBox] = Seq(createPulseBox(lastPulseBox, hashData, signs), createTokenRepoBox(tokenRepoBox), createProxyBox(proxyBox))
         val txB = ctx.newTxBuilder()
         val tx = txB.boxesToSpend(Seq(lastPulseBox, tokenRepoBox, proxyBox).asJava)
           .fee(Configs.defaultTxFee)
