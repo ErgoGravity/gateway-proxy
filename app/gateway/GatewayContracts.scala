@@ -5,7 +5,7 @@ import scorex.crypto.hash.Digest32
 import sigmastate.Values.ErgoTree
 import network.Client
 import helpers.Configs
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 
 object GatewayContracts {
   // In development network
@@ -15,7 +15,7 @@ object GatewayContracts {
   lazy val tokenRepoTokenId: String = "fd87d089c2945cfdec4551bc6e846c869ca5ef7e2f7790631fc6afeb708126e5"
 }
 
-class GatewayContracts @Inject()(client: Client) {
+class GatewayContracts (ctx: BlockchainContext) {
   var oracleAddress: String = _
   var pulseAddress: String = _
   var gravityAddress: String = _
@@ -298,8 +298,6 @@ class GatewayContracts @Inject()(client: Client) {
        | }
     """.stripMargin
 
-  client.getClient.execute(ctx => {
-
   lazy val gravityContract: ErgoContract = ctx.compileContract(
     ConstantsBuilder.create()
       .item("tokenId", ErgoId.create(GatewayContracts.gravityTokenId).getBytes)
@@ -352,5 +350,4 @@ class GatewayContracts @Inject()(client: Client) {
   tokenRepoAddress = Configs.addressEncoder.fromProposition(tokenRepoErgoTree).get.toString
   signalAddress = Configs.addressEncoder.fromProposition(signalContract.getErgoTree).get.toString
 
-  })
 }
