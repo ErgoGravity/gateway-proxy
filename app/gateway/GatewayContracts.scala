@@ -3,9 +3,7 @@ package gateway
 import org.ergoplatform.appkit._
 import scorex.crypto.hash.Digest32
 import sigmastate.Values.ErgoTree
-import network.Client
 import helpers.Configs
-import javax.inject.{Inject, Singleton}
 
 object GatewayContracts {
   // In development network

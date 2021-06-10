@@ -1,7 +1,7 @@
 package controllers
 
 import javax.inject._
-import network.{Client, Explorer}
+import network.{Explorer, NetworkIObject}
 import play.api.Logger
 import play.api.mvc._
 import helpers.Utils
@@ -17,7 +17,7 @@ import scala.concurrent.ExecutionContext
  * Controller of Gravity-Ergo-Proxy.
  */
 class ApiController @Inject()(controllerComponents: ControllerComponents,
-                              client: Client, explorer: Explorer, utils: Utils, adaptor: Adaptor)
+                              explorer: Explorer, utils: Utils, adaptor: Adaptor, networkIObject: NetworkIObject)
                              (implicit ec: ExecutionContext) extends AbstractController(controllerComponents) with Circe {
 
   private val logger: Logger = Logger(this.getClass)
@@ -35,7 +35,7 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
       Ok(
         s"""{
            |  "success": true,
-           |  "height": ${client.getHeight}
+           |  "height": ${networkIObject.getHeight}
            |}""".stripMargin
       ).as("application/json")
 
