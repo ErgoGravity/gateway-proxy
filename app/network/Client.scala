@@ -1,21 +1,16 @@
 package network
 
-
 import gateway.GatewayContracts
-import helpers.{Configs, Utils}
-import javax.inject.{Inject, Singleton}
-import org.ergoplatform.appkit.{Address, BlockchainContext, ErgoClient, InputBox, RestApiErgoClient}
+import helpers.Configs
+import javax.inject.Inject
+import org.ergoplatform.appkit.RestApiErgoClient
 
-import scala.collection.JavaConverters._
 import play.api.Logger
 
-@Singleton
-class Client @Inject()(utils: Utils) {
+
+class Client @Inject()(networkIObject: NetworkIObject) {
   private val logger: Logger = Logger(this.getClass)
   private val defaultHeader: Seq[(String, String)] = Seq[(String, String)](("Content-Type", "application/json"))
-  private var client: ErgoClient = _
-
-  var gatewayContractsInterface: Option[GatewayContracts] = None
 
   /**
    * Sets client for the entire app when the app starts
@@ -24,9 +19,9 @@ class Client @Inject()(utils: Utils) {
    */
   def setClient(): Long = {
     try {
-      client = RestApiErgoClient.create(Configs.nodeUrl, Configs.networkType, Configs.nodeApiKey)
-      client.execute(ctx => {
-        gatewayContractsInterface = Some(new GatewayContracts(ctx))
+      networkIObject.client = RestApiErgoClient.create(Configs.nodeUrl, Configs.networkType, Configs.nodeApiKey)
+      networkIObject.getCtxClient(implicit ctx => {
+        networkIObject.gatewayContractsInterface = Some(new GatewayContracts(ctx))
         ctx.getHeight
       })
 
@@ -36,26 +31,4 @@ class Client @Inject()(utils: Utils) {
         0L
     }
   }
-
-  def getClient: ErgoClient = {
-    client
-  }
-
-  /**
-   * @return current height of the blockchain
-   */
-  def getHeight: Long = {
-    client.execute(ctx => ctx.getHeight)
-  }
-
-  /**
-   * @param address :Address get a valid address
-   * @return List of input address boxes
-   */
-  def getUnspentBox(address: Address): List[InputBox] = {
-    client.execute(ctx =>
-      ctx.getUnspentBoxesFor(address).asScala.toList
-    )
-  }
-
 }

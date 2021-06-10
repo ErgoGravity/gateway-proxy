@@ -5,7 +5,7 @@ import play.api.Logger
 import java.security.SecureRandom
 
 import scala.collection.JavaConverters._
-import network.{Client, Explorer}
+import network.{Explorer, NetworkIObject}
 import sigmastate.interpreter.CryptoConstants.{dlogGroup, groupOrder}
 import sigmastate.eval._
 import special.sigma.GroupElement
@@ -15,10 +15,16 @@ import org.ergoplatform.appkit.impl.ErgoTreeContract
 import special.collection.Coll
 
 
-class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
+class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
 
   private val logger: Logger = Logger(this.getClass)
-  private val gatewayAddresses = client.gatewayContractsInterface.get
+  var gatewayAddresses: GatewayContracts = _
+
+  def this(utils: Utils, networkIObject: NetworkIObject, gatewayAddresses: GatewayContracts) = {
+    this(utils, networkIObject)
+    this.gatewayAddresses = networkIObject.gatewayContractsInterface.get
+  }
+
   private def selectRandomBox(seq: Seq[InputBox]): Option[InputBox] = {
     val random = new SecureRandom()
     new scala.util.Random(random).shuffle(seq).headOption
@@ -38,7 +44,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
         ("proxy", Configs.proxyAddress.getErgoAddress.toString, "")
     }
 
-    val boxes = client.getUnspentBox(Address.create(boxData._2))
+    val boxes = networkIObject.getUnspentBox(Address.create(boxData._2))
     val box = if (boxData._1.equals("proxy"))
       boxes.filter(box => box.getValue > Configs.defaultTxFee * 2)
     else
@@ -70,7 +76,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
     val proxyBox = getSpecBox("proxy", random = true)
 
     def createPulseBox(lastPulseBox: InputBox, hashData: Array[Byte], signs: (Array[GroupElement], Array[special.sigma.BigInt])): OutBox = {
-      client.getClient.execute(ctx => {
+      networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         var newPulseBox = txB.outBoxBuilder()
         newPulseBox = newPulseBox.value(lastPulseBox.getValue)
@@ -87,7 +93,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
     }
 
     def createTokenRepoBox(lastRepoBox: InputBox): OutBox = {
-      client.getClient.execute(ctx => {
+      networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         var newTokenRepoBox = txB.outBoxBuilder()
         newTokenRepoBox = newTokenRepoBox.value(lastRepoBox.getValue - Configs.signalBoxValue)
@@ -102,7 +108,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
      */
     @deprecated
     def createSignalBox(lastRepoBox: InputBox, hashData: Array[Byte]): OutBox = {
-      client.getClient.execute(ctx => {
+      networkIObject.getCtxClient(implicit ctx => {
         var newSignalBox = ctx.newTxBuilder().outBoxBuilder()
         newSignalBox = newSignalBox.value(Configs.signalBoxValue)
         newSignalBox = newSignalBox.tokens(new ErgoToken(lastRepoBox.getTokens.get(0).getId, 1))
@@ -113,7 +119,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
     }
 
     def createProxyBox(proxyBox: InputBox): OutBox = {
-      client.getClient.execute(ctx => {
+      networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         var newProxyBox = txB.outBoxBuilder()
         newProxyBox = newProxyBox.value(proxyBox.getValue - Configs.defaultTxFee)
@@ -126,7 +132,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
     val signalCreated = lastPulseBox.getRegisters.get(5).getValue.asInstanceOf[Int]
 
     if (signalCreated == 1) {
-      client.getClient.execute(ctx => {
+      networkIObject.getCtxClient(implicit ctx => {
         val prover = ctx.newProverBuilder()
           .withDLogSecret(Configs.proxySecret)
           .build()
@@ -166,7 +172,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
     val proxyBox = getSpecBox("proxy", random = true)
 
     def createNewGravityBox(lastGravityBox: InputBox, signs: (Array[GroupElement], Array[special.sigma.BigInt]), consuls: Seq[String]): OutBox = {
-      client.getClient.execute(ctx => {
+      networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         val bftValue = ErgoValue.of(3.toLong)
         val consulsAddress = consuls.map(Address.create(_).getPublicKeyGE.getEncoded)
@@ -185,7 +191,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
     }
 
     def createProxyBox(feeBox: InputBox): OutBox = {
-      client.getClient.execute(ctx => {
+      networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         var newProxyBox = txB.outBoxBuilder()
         newProxyBox = newProxyBox.value(feeBox.getValue - Configs.defaultTxFee)
@@ -195,7 +201,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
       })
     }
 
-    client.getClient.execute(ctx => {
+    networkIObject.getCtxClient(implicit ctx => {
       val prover = ctx.newProverBuilder()
         .withDLogSecret(Configs.proxySecret)
         .build()
@@ -221,7 +227,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
     val proxyBox = getSpecBox("proxy", random = true)
 
     def createNewOracleBox(lastOracleBox: InputBox, signs: (Array[GroupElement], Array[special.sigma.BigInt]), oracles: Seq[String]): OutBox = {
-      client.getClient.execute(ctx => {
+      networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         val bftValue = ErgoValue.of(3.toLong)
         val oraclesAddress = oracles.map(Address.create(_).getPublicKeyGE.getEncoded)
@@ -239,7 +245,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
     }
 
     def createProxyBox(feeBox: InputBox): OutBox = {
-      client.getClient.execute(ctx => {
+      networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         var newProxyBox = txB.outBoxBuilder()
         newProxyBox = newProxyBox.value(feeBox.getValue - Configs.defaultTxFee)
@@ -249,7 +255,7 @@ class Adaptor @Inject()(client: Client, explorer: Explorer, utils: Utils){
       })
     }
 
-    client.getClient.execute(ctx => {
+    networkIObject.getCtxClient(implicit ctx => {
       val prover = ctx.newProverBuilder()
         .withDLogSecret(Configs.proxySecret)
         .build()
