@@ -182,11 +182,16 @@ class GatewayContracts (ctx: BlockchainContext) {
        |    }
        |    val checkOUTPUTS = {
        |     if(SELF.tokens(0)._1 == pulseNebulaNFT) {
+       |     val dataType = OUTPUTS(0).R9[Int].get
        |      allOf(Coll(
        |        publicCheckOutBoxes((SELF, OUTPUTS(0))),
        |        // We expect pulseId to be in R7 and increase pulseId in out box
        |        OUTPUTS(0).R7[Long].get == currentPulseId + 1,
-       |        OUTPUTS(0).R8[Int].get == 0
+       |        OUTPUTS(0).R8[Int].get == 0,
+       |        dataType == SELF.R9[Int].get,
+       |        dataType >= 0,
+       |        dataType < 3
+       |
        |      ))
        |     }
        |     else false
@@ -194,6 +199,8 @@ class GatewayContracts (ctx: BlockchainContext) {
        |    (check_bftCoefficient && checkOUTPUTS)
        |  } else {
        |     val checkRegisters = {
+       |      val dataType = OUTPUTS(0).R9[Int].get
+       |
        |      allOf(Coll(
        |         SELF.R4[Coll[Byte]].get == msgHash,
        |         SELF.R5[Coll[GroupElement]].get == signs_a,
@@ -201,6 +208,9 @@ class GatewayContracts (ctx: BlockchainContext) {
        |         // We expect pulseId to be in R7 and increase pulseId in out box
        |         OUTPUTS(0).R7[Long].get == currentPulseId,
        |         OUTPUTS(0).R8[Int].get == 1,
+       |         dataType == SELF.R9[Int].get,
+       |         dataType >= 0,
+       |         dataType < 3
        |
        |         // Expect pulseId to be in R4 of the signal box
        |         OUTPUTS(2).R4[Long].get == currentPulseId,

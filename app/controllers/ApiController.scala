@@ -205,6 +205,51 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
     }
   }
 
+  /**
+   * Send Value To Subs
+   * expects :
+   * {
+   * "Value" : "",
+   * "DataType": "0",
+   * "PulseId": "1687467486549841687486468"
+   * }
+   *
+   * @return tx id
+   */
+  def sendValueToSubs(): Action[Json] = Action(circe.json) { implicit request =>
+    try {
+      val value = request.body.hcursor.downField("value").as[String].getOrElse(throw new Throwable("value field must exist"))
+      val pulseId = request.body.hcursor.downField("pulseId").as[String].getOrElse(throw new Throwable("pulseId field must exist"))
+
+
+      Ok(
+        s"""{
+           |  "success": true,
+           |  "txId": "${adaptor.sendValueToSubs(utils.toByteArray(value), pulseId.toLong)}"
+           |}""".stripMargin
+      ).as("application/json")
+
+    } catch {
+      case e: Throwable => exception(e)
+    }
+  }
+
+  /**
+   * @return extractor Data Type
+   */
+  def getDataType: Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
+    try {
+      Ok(
+        s"""{
+           |  "success": true,
+           |  "dataType": ${adaptor.getDataType}
+           |}""".stripMargin
+      ).as("application/json")
+
+    } catch {
+      case e: Throwable => exception(e)
+    }
+  }
 
   /**
    * @return list of current consuls
