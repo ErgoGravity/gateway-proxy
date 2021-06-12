@@ -1,9 +1,11 @@
 package gateway
 
+import com.google.common.io.BaseEncoding
+
 import javax.inject.Inject
 import play.api.Logger
-import java.security.SecureRandom
 
+import java.security.SecureRandom
 import scala.collection.JavaConverters._
 import network.{Explorer, NetworkIObject}
 import sigmastate.interpreter.CryptoConstants.{dlogGroup, groupOrder}
@@ -13,6 +15,7 @@ import org.ergoplatform.appkit.{Address, ErgoToken, ErgoType, ErgoValue, InputBo
 import helpers.{Configs, Utils}
 import org.ergoplatform.appkit.impl.ErgoTreeContract
 import special.collection.Coll
+import com.google.common.primitives.Longs
 
 
 class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
@@ -72,7 +75,6 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
   def addPulse(hashData: Array[Byte], signs: (Array[GroupElement], Array[special.sigma.BigInt]), sendTransaction: Boolean = false): String = {
     val lastOracleBox = getSpecBox("oracle")
     val lastPulseBox = getSpecBox("pulse")
-    val tokenRepoBox = getSpecBox("tokenRepo", random = true)
     val proxyBox = getSpecBox("proxy", random = true)
 
     def createPulseBox(lastPulseBox: InputBox, hashData: Array[Byte], signs: (Array[GroupElement], Array[special.sigma.BigInt])): OutBox = {
@@ -85,7 +87,77 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
           ErgoValue.of(hashData),
           ErgoValue.of(signs._1, ErgoType.groupElementType), ErgoValue.of(signs._2, ErgoType.bigIntType),
           ErgoValue.of(lastPulseBox.getRegisters.get(3).getValue.asInstanceOf[Long] + 1),
-          ErgoValue.of(0))
+          ErgoValue.of(0),
+          lastPulseBox.getRegisters.get(5))
+        newPulseBox = newPulseBox.registers(regs: _*)
+        newPulseBox.contract(new ErgoTreeContract(Address.create(gatewayAddresses.pulseAddress).getErgoAddress.script))
+        newPulseBox.build()
+      })
+    }
+
+    def createProxyBox(proxyBox: InputBox): OutBox = {
+      networkIObject.getCtxClient(implicit ctx => {
+        val txB = ctx.newTxBuilder()
+        var newProxyBox = txB.outBoxBuilder()
+        newProxyBox = newProxyBox.value(proxyBox.getValue - Configs.defaultTxFee)
+        newProxyBox = newProxyBox.tokens(proxyBox.getTokens.asScala.toList: _*)
+        newProxyBox.contract(new ErgoTreeContract(Configs.proxyAddress.getErgoAddress.script))
+        newProxyBox.build()
+      })
+    }
+
+    val signalCreated = lastPulseBox.getRegisters.get(5).getValue.asInstanceOf[Int]
+
+    if (signalCreated == 1) {
+      networkIObject.getCtxClient(implicit ctx => {
+        val prover = ctx.newProverBuilder()
+          .withDLogSecret(Configs.proxySecret)
+          .build()
+        val outputs: Seq[OutBox] = Seq(createPulseBox(lastPulseBox, hashData, signs), createProxyBox(proxyBox))
+        val txB = ctx.newTxBuilder()
+        val tx = txB.boxesToSpend(Seq(lastPulseBox, proxyBox).asJava)
+          .fee(Configs.defaultTxFee)
+          .outputs(outputs: _*)
+          .sendChangeTo(Configs.proxyAddress.getErgoAddress)
+          .withDataInputs(Seq(lastOracleBox).toList.asJava)
+          .build()
+        val signed = prover.sign(tx)
+        logger.debug(s"pulseTx data ${signed.toJson(false)}")
+        val pulseTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
+        logger.info(s"sending pulse tx ${pulseTxId}")
+        pulseTxId
+      })
+    }
+    else {
+      logger.info(s"there is an active pulse box, can't create a new pulse box")
+      throw new Throwable("there is an active pulse box, can't create a new pulse box")
+    }
+  }
+
+  def sendValueToSubs(value: Array[Byte], pulseId: Long, sendTransaction: Boolean = false): String = {
+    val lastOracleBox = getSpecBox("oracle")
+    val lastPulseBox = getSpecBox("pulse")
+    val tokenRepoBox = getSpecBox("tokenRepo", random = true)
+    val proxyBox = getSpecBox("proxy", random = true)
+
+    if (pulseId != lastPulseBox.getRegisters.get(3).getValue.asInstanceOf[Long]){
+      logger.info(s"this pulse is not equal to the last one, can not create signal box")
+      throw new Throwable("this pulse is not equal to the last one, can not create signal box")
+    }
+
+    def createPulseBox(lastPulseBox: InputBox): OutBox = {
+      networkIObject.getCtxClient(implicit ctx => {
+        val txB = ctx.newTxBuilder()
+        var newPulseBox = txB.outBoxBuilder()
+        newPulseBox = newPulseBox.value(lastPulseBox.getValue)
+        newPulseBox = newPulseBox.tokens(lastPulseBox.getTokens.asScala.toList: _*)
+        val regs = Seq(
+          lastPulseBox.getRegisters.get(0),
+          lastPulseBox.getRegisters.get(1),
+          lastPulseBox.getRegisters.get(2),
+          lastPulseBox.getRegisters.get(3),
+          ErgoValue.of(1),
+          lastPulseBox.getRegisters.get(5))
         newPulseBox = newPulseBox.registers(regs: _*)
         newPulseBox.contract(new ErgoTreeContract(Address.create(gatewayAddresses.pulseAddress).getErgoAddress.script))
         newPulseBox.build()
@@ -103,16 +175,12 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       })
     }
 
-    /*
-       TODO: this function can, used in add value to sub
-     */
-    @deprecated
-    def createSignalBox(lastRepoBox: InputBox, hashData: Array[Byte]): OutBox = {
+    def createSignalBox(lastRepoBox: InputBox, pulseId: Long, value: Array[Byte]): OutBox = {
       networkIObject.getCtxClient(implicit ctx => {
         var newSignalBox = ctx.newTxBuilder().outBoxBuilder()
         newSignalBox = newSignalBox.value(Configs.signalBoxValue)
         newSignalBox = newSignalBox.tokens(new ErgoToken(lastRepoBox.getTokens.get(0).getId, 1))
-        newSignalBox = newSignalBox.registers(ErgoValue.of(hashData))
+        newSignalBox = newSignalBox.registers(ErgoValue.of(pulseId), ErgoValue.of(value))
         newSignalBox.contract(new ErgoTreeContract(Address.create(gatewayAddresses.signalAddress).getErgoAddress.script))
         newSignalBox.build()
       })
@@ -136,7 +204,8 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
         val prover = ctx.newProverBuilder()
           .withDLogSecret(Configs.proxySecret)
           .build()
-        val outputs: Seq[OutBox] = Seq(createPulseBox(lastPulseBox, hashData, signs), createTokenRepoBox(tokenRepoBox), createProxyBox(proxyBox))
+        val outputs: Seq[OutBox] = Seq(createPulseBox(lastPulseBox), createTokenRepoBox(tokenRepoBox),
+          createSignalBox(tokenRepoBox, pulseId, value), createProxyBox(proxyBox))
         val txB = ctx.newTxBuilder()
         val tx = txB.boxesToSpend(Seq(lastPulseBox, tokenRepoBox, proxyBox).asJava)
           .fee(Configs.defaultTxFee)
@@ -155,6 +224,11 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       logger.info(s"there is an active pulse box, can't create a new pulse box")
       throw new Throwable("there is an active pulse box, can't create a new pulse box")
     }
+  }
+
+  def getDataType: Int = {
+    val lastPulseBox = getSpecBox("pulse")
+    lastPulseBox.getRegisters.get(5).getValue.asInstanceOf[Int]
   }
 
   def getConsuls: Array[String] = {
