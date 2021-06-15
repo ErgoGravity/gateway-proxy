@@ -1,13 +1,12 @@
 package gateway
 
-import com.google.common.io.BaseEncoding
 
 import javax.inject.Inject
 import play.api.Logger
 
 import java.security.SecureRandom
 import scala.collection.JavaConverters._
-import network.{Explorer, NetworkIObject}
+import network.NetworkIObject
 import sigmastate.interpreter.CryptoConstants.{dlogGroup, groupOrder}
 import sigmastate.eval._
 import special.sigma.GroupElement
@@ -15,7 +14,7 @@ import org.ergoplatform.appkit.{Address, ErgoToken, ErgoType, ErgoValue, InputBo
 import helpers.{Configs, Utils}
 import org.ergoplatform.appkit.impl.ErgoTreeContract
 import special.collection.Coll
-import com.google.common.primitives.Longs
+
 
 
 class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
@@ -402,6 +401,15 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     val skBig = BigInt(sk, 16)
     val address: Address = utils.getAddressFromSk(skBig.bigInteger)
     (address.toString, utils.toHexString(address.getPublicKey.pkBytes))
+  }
+
+  def validateAddress(address: String): Boolean = {
+    try{
+      utils.getAddress(address).script
+      true
+    } catch {
+      case _: Throwable => throw new Exception("Invalid withdraw address")
+    }
   }
 
 }
