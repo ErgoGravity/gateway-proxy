@@ -355,5 +355,21 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
     }
   }
 
+  def validateAddress(): Action[Json] = Action(circe.json) { implicit request =>
+    try {
+      val address = request.body.hcursor.downField("address").as[String].getOrElse(throw new Throwable("address field must exist"))
+
+      Ok(
+        s"""{
+           |  "success": true,
+           |  "isValid": "${adaptor.validateAddress(address)}"
+           |}""".stripMargin
+      ).as("application/json")
+
+    } catch {
+      case e: Throwable => exception(e)
+    }
+  }
+
 }
 
