@@ -210,7 +210,7 @@ class GatewayContracts (ctx: BlockchainContext) {
        |         OUTPUTS(0).R8[Int].get == 1,
        |         dataType == SELF.R9[Int].get,
        |         dataType >= 0,
-       |         dataType < 3
+       |         dataType < 3,
        |
        |         // Expect pulseId to be in R4 of the signal box
        |         OUTPUTS(2).R4[Long].get == currentPulseId,
