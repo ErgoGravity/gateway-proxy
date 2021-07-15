@@ -3,6 +3,7 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
+GET         /                            controllers.ApiController.index
 GET         /height                      controllers.ApiController.height
 GET         /numConfirmations/:id        controllers.ApiController.confNum(id: String)
 POST        /sign                        controllers.ApiController.sign
