@@ -28,6 +28,23 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
   }
 
   /**
+   * @return current a text for root API
+   */
+  def index: Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
+    try {
+      Ok(
+        s"""{
+           |  "success": true,
+           |  "message": "Ergo Gateway Proxy"
+           |}""".stripMargin
+      ).as("application/json")
+
+    } catch {
+      case e: Throwable => exception(e)
+    }
+  }
+
+  /**
    * @return current height of the blockchain
    */
   def height: Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
