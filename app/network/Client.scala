@@ -19,7 +19,9 @@ class Client @Inject()(networkIObject: NetworkIObject) {
    */
   def setClient(): Long = {
     try {
-      networkIObject.client = RestApiErgoClient.create(Configs.nodeUrl, Configs.networkType, Configs.nodeApiKey)
+      networkIObject.client = RestApiErgoClient.create(
+        Configs.nodeUrl, Configs.networkType, "", Configs.explorerUrl
+      )
       networkIObject.getCtxClient(implicit ctx => {
         networkIObject.gatewayContractsInterface = Some(new GatewayContracts(ctx))
         ctx.getHeight
