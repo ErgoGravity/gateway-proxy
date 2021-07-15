@@ -15,7 +15,7 @@ scalaVersion := "2.12.10"
 
 libraryDependencies ++= Seq( jdbc , ehcache , ws , specs2 % Test , guice )
 libraryDependencies ++= Seq(
-  "org.ergoplatform" %% "ergo-appkit" % "4.0.3",
+  "org.ergoplatform" %% "ergo-appkit" % "develop-271d4122-SNAPSHOT",
   "org.scalaj" %% "scalaj-http" % "2.4.2",
   "com.dripower" %% "play-circe" % "2712.0"
 )
@@ -26,7 +26,6 @@ javaOptions in Universal ++= Seq(
   "-Dpidfile.path=/dev/null"
 )
 
-
 assemblyMergeStrategy in assembly := {
   case PathList("reference.conf") => MergeStrategy.concat
   case manifest if manifest.contains("MANIFEST.MF") => MergeStrategy.discard
@@ -36,5 +35,3 @@ assemblyMergeStrategy in assembly := {
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
 }
-
-
