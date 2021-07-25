@@ -5,17 +5,15 @@ version := "1.0"
 
 lazy val `gatewayproxy` = (project in file(".")).enablePlugins(PlayScala)
 
-resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
-resolvers += "Akka Snapshot Repository" at "https://repo.akka.io/snapshots/"
-resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
-resolvers += "Typesafe maven releases" at "https://dl.bintray.com/typesafe/maven-releases/"
-resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
+resolvers ++= Seq("Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
+    "SonaType" at "https://oss.sonatype.org/content/groups/public",
+    "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots")
 
 scalaVersion := "2.12.10"
 
 libraryDependencies ++= Seq( jdbc , ehcache , ws , specs2 % Test , guice )
 libraryDependencies ++= Seq(
-  "org.ergoplatform" %% "ergo-appkit" % "develop-271d4122-SNAPSHOT",
+  "org.ergoplatform" %% "ergo-appkit" % "gateway-proxy-local",
   "org.scalaj" %% "scalaj-http" % "2.4.2",
   "com.dripower" %% "play-circe" % "2712.0"
 )

@@ -16,16 +16,9 @@ import org.ergoplatform.appkit.impl.ErgoTreeContract
 import special.collection.Coll
 
 
-
 class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
 
   private val logger: Logger = Logger(this.getClass)
-  var gatewayAddresses: GatewayContracts = _
-
-  def this(utils: Utils, networkIObject: NetworkIObject, gatewayAddresses: GatewayContracts) = {
-    this(utils, networkIObject)
-    this.gatewayAddresses = networkIObject.gatewayContractsInterface.get
-  }
 
   private def selectRandomBox(seq: Seq[InputBox]): Option[InputBox] = {
     val random = new SecureRandom()
@@ -33,6 +26,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
   }
 
   private def getSpecBox(typeBox: String, random: Boolean = false): InputBox = {
+    val gatewayAddresses = networkIObject.gatewayContractsInterface.get
     val boxData = typeBox match {
       case "pulse" =>
         ("pulse", gatewayAddresses.pulseAddress, GatewayContracts.pulseTokenId)
@@ -89,7 +83,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
           ErgoValue.of(0),
           lastPulseBox.getRegisters.get(5))
         newPulseBox = newPulseBox.registers(regs: _*)
-        newPulseBox.contract(new ErgoTreeContract(Address.create(gatewayAddresses.pulseAddress).getErgoAddress.script))
+        newPulseBox.contract(new ErgoTreeContract(Address.create(networkIObject.gatewayContractsInterface.get.pulseAddress).getErgoAddress.script))
         newPulseBox.build()
       })
     }
@@ -105,7 +99,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       })
     }
 
-    val signalCreated = lastPulseBox.getRegisters.get(5).getValue.asInstanceOf[Int]
+    val signalCreated = lastPulseBox.getRegisters.get(4).getValue.asInstanceOf[Int]
 
     if (signalCreated == 1) {
       networkIObject.getCtxClient(implicit ctx => {
@@ -134,6 +128,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
   }
 
   def sendValueToSubs(value: Array[Byte], pulseId: Long, sendTransaction: Boolean = false): String = {
+    val gatewayAddresses = networkIObject.gatewayContractsInterface.get
     val lastOracleBox = getSpecBox("oracle")
     val lastPulseBox = getSpecBox("pulse")
     val tokenRepoBox = getSpecBox("tokenRepo", random = true)
@@ -196,9 +191,9 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       })
     }
 
-    val signalCreated = lastPulseBox.getRegisters.get(5).getValue.asInstanceOf[Int]
+    val signalCreated = lastPulseBox.getRegisters.get(4).getValue.asInstanceOf[Int]
 
-    if (signalCreated == 1) {
+    if (signalCreated == 0) {
       networkIObject.getCtxClient(implicit ctx => {
         val prover = ctx.newProverBuilder()
           .withDLogSecret(Configs.proxySecret)
@@ -220,8 +215,8 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       })
     }
     else {
-      logger.info(s"there is an active pulse box, can't create a new pulse box")
-      throw new Throwable("there is an active pulse box, can't create a new pulse box")
+      logger.info(s"there is not an active pulse box, can't create sendValueToSub box")
+      throw new Throwable("there is not an active pulse box, can't create sendValueToSub box")
     }
   }
 
@@ -237,7 +232,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
 
   def getLastRound: Long = {
     val gravityBox = getSpecBox("gravity")
-    gravityBox.getRegisters.get(5).getValue.asInstanceOf[Long]
+    gravityBox.getRegisters.get(4).getValue.asInstanceOf[Long]
   }
 
   def updateConsuls(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newConsuls: Seq[String], sendTransaction: Boolean= false): String = {
@@ -258,7 +253,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
           .value(lastGravityBox.getValue)
           .tokens(new ErgoToken(lastGravityBox.getTokens.get(0).getId, 1))
           .registers(bftValue, consulsValue, signs_a, signs_z, newRoundId)
-          .contract(new ErgoTreeContract(Address.create(gatewayAddresses.gravityAddress).getErgoAddress.script))
+          .contract(new ErgoTreeContract(Address.create(networkIObject.gatewayContractsInterface.get.gravityAddress).getErgoAddress.script))
           .build()
       })
     }
@@ -312,7 +307,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
           .value(lastOracleBox.getValue)
           .tokens(new ErgoToken(lastOracleBox.getTokens.get(0).getId, 1))
           .registers(bftValue, oraclesValue, signs_a, signs_z)
-          .contract(new ErgoTreeContract(Address.create(gatewayAddresses.oracleAddress).getErgoAddress.script))
+          .contract(new ErgoTreeContract(Address.create(networkIObject.gatewayContractsInterface.get.oracleAddress).getErgoAddress.script))
           .build()
       })
     }
