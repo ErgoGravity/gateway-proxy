@@ -14,6 +14,10 @@ RUN wget https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-19.3.
 ENV JAVA_HOME="/gateway/graalvm-ce-java8-19.3.1"
 ENV PATH="${JAVA_HOME}/bin:$PATH"
 
+ADD ["./appkit/", "/gateway/appkit"]
+WORKDIR /gateway/appkit
+RUN sbt publishLocal
+
 ADD ["./app", "/gateway/proxy/app"]
 ADD ["./conf", "/gateway/proxy/conf"]
 ADD ["./project", "/gateway/proxy/project"]
