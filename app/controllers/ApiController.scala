@@ -276,7 +276,7 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
       Ok(
         s"""{
            |  "success": true,
-           |  "consuls": ${adaptor.getConsuls}
+           |  "consuls": ${adaptor.getConsuls.asJson}
            |}""".stripMargin
       ).as("application/json")
 
