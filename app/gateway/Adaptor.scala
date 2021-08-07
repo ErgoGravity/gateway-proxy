@@ -263,7 +263,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
         val consulsValue = ErgoValue.of(IndexedSeq(consulsAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
-        val newRoundId = ErgoValue.of(lastGravityBox.getRegisters.get(5).getValue.asInstanceOf[Long] + 1)
+        val newRoundId = ErgoValue.of(lastGravityBox.getRegisters.get(4).getValue.asInstanceOf[Long] + 1)
 
         txB.outBoxBuilder
           .value(lastGravityBox.getValue)
