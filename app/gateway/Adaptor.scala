@@ -243,7 +243,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         val bftValue = ErgoValue.of(3.toLong)
-        val consulsAddress = consuls.map(Address.create(_).getPublicKeyGE.getEncoded)
+        val consulsAddress = consuls.map(JavaHelpers.decodeStringToGE(_).getEncoded)
         val consulsValue = ErgoValue.of(IndexedSeq(consulsAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
@@ -298,7 +298,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         val bftValue = ErgoValue.of(3.toLong)
-        val oraclesAddress = oracles.map(Address.create(_).getPublicKeyGE.getEncoded)
+        val oraclesAddress = oracles.map(JavaHelpers.decodeStringToGE(_).getEncoded)
         val oraclesValue = ErgoValue.of(IndexedSeq(oraclesAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
