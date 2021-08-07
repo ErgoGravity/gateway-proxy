@@ -50,7 +50,6 @@ class Utils @Inject()() {
   def getAddressFromSk(sk: BigInteger) = new Address(JavaHelpers.createP2PKAddress(DLogProverInput(sk).publicImage, Configs.addressEncoder.networkPrefix))
 
 
-  val addressEncoder = new ErgoAddressEncoder(Configs.networkType.networkPrefix)
-  def getAddress(address: String): ErgoAddress = addressEncoder.fromString(address).get
+  def getAddress(address: String): ErgoAddress = Configs.addressEncoder.fromString(address).get
 
 }

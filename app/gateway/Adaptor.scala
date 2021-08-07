@@ -93,7 +93,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
         val txB = ctx.newTxBuilder()
         var newProxyBox = txB.outBoxBuilder()
         newProxyBox = newProxyBox.value(proxyBox.getValue - Configs.defaultTxFee)
-        newProxyBox = newProxyBox.tokens(proxyBox.getTokens.asScala.toList: _*)
+        if (proxyBox.getTokens.size() > 0) newProxyBox =  newProxyBox.tokens(proxyBox.getTokens.asScala.toList: _*)
         newProxyBox.contract(new ErgoTreeContract(Configs.proxyAddress.getErgoAddress.script))
         newProxyBox.build()
       })
@@ -114,11 +114,19 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
           .sendChangeTo(Configs.proxyAddress.getErgoAddress)
           .withDataInputs(Seq(lastOracleBox).toList.asJava)
           .build()
-        val signed = prover.sign(tx)
-        logger.debug(s"pulseTx data ${signed.toJson(false)}")
-        val pulseTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
-        logger.info(s"sending pulse tx ${pulseTxId}")
-        pulseTxId
+        try {
+          val signed = prover.sign(tx)
+          logger.debug(s"pulseTx data ${signed.toJson(false)}")
+          val pulseTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
+          logger.info(s"sending pulse tx ${pulseTxId}")
+          pulseTxId
+        }
+        catch {
+          case e: Throwable =>
+            logger.warn("There is not enough valid sign")
+            logger.warn(e.getMessage)
+            throw new Throwable("Script reduced to false (maybe there is not enough valid sign)")
+        }
       })
     }
     else {
@@ -185,7 +193,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
         val txB = ctx.newTxBuilder()
         var newProxyBox = txB.outBoxBuilder()
         newProxyBox = newProxyBox.value(proxyBox.getValue - Configs.defaultTxFee)
-        newProxyBox = newProxyBox.tokens(proxyBox.getTokens.asScala.toList: _*)
+        if (proxyBox.getTokens.size() > 0) newProxyBox = newProxyBox.tokens(proxyBox.getTokens.asScala.toList: _*)
         newProxyBox.contract(new ErgoTreeContract(Configs.proxyAddress.getErgoAddress.script))
         newProxyBox.build()
       })
@@ -207,11 +215,19 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
           .sendChangeTo(Configs.proxyAddress.getErgoAddress)
           .withDataInputs(Seq(lastOracleBox).toList.asJava)
           .build()
-        val signed = prover.sign(tx)
-        logger.debug(s"pulseTx data ${signed.toJson(false)}")
-        val pulseTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
-        logger.info(s"sending pulse tx ${pulseTxId}")
-        pulseTxId
+        try {
+          val signed = prover.sign(tx)
+          logger.debug(s"pulseTx data ${signed.toJson(false)}")
+          val pulseTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
+          logger.info(s"sending pulse tx ${pulseTxId}")
+          pulseTxId
+        }
+        catch {
+          case e: Throwable =>
+            logger.warn("There is not enough valid sign")
+            logger.warn(e.getMessage)
+            throw new Throwable("Script reduced to false (maybe there is not enough valid sign)")
+        }
       })
     }
     else {
@@ -243,7 +259,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         val bftValue = ErgoValue.of(3.toLong)
-        val consulsAddress = consuls.map(Address.create(_).getPublicKeyGE.getEncoded)
+        val consulsAddress = consuls.map(JavaHelpers.decodeStringToGE(_).getEncoded)
         val consulsValue = ErgoValue.of(IndexedSeq(consulsAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
@@ -263,7 +279,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
         val txB = ctx.newTxBuilder()
         var newProxyBox = txB.outBoxBuilder()
         newProxyBox = newProxyBox.value(feeBox.getValue - Configs.defaultTxFee)
-        newProxyBox = newProxyBox.tokens(feeBox.getTokens.asScala.toList: _*)
+        if (proxyBox.getTokens.size() > 0) newProxyBox = newProxyBox.tokens(feeBox.getTokens.asScala.toList: _*)
         newProxyBox.contract(new ErgoTreeContract(Configs.proxyAddress.getErgoAddress.script))
         newProxyBox.build()
       })
@@ -280,12 +296,19 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       .fee(Configs.defaultTxFee)
       .sendChangeTo(Configs.proxyAddress.getErgoAddress)
       .build()
-
-      val signed = prover.sign(tx)
-      logger.debug(s"consulsTx data ${signed.toJson(false)}")
-      val consulsTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
-      logger.info(s"sending consuls tx ${consulsTxId}")
-      consulsTxId
+      try {
+        val signed = prover.sign(tx)
+        logger.debug(s"consulsTx data ${signed.toJson(false)}")
+        val consulsTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
+        logger.info(s"sending consuls tx ${consulsTxId}")
+        consulsTxId
+      }
+      catch {
+        case e: Throwable =>
+          logger.warn("There is not enough valid sign")
+          logger.warn(e.getMessage)
+          throw new Throwable("Script reduced to false (maybe there is not enough valid sign)")
+      }
     })
   }
 
@@ -298,7 +321,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         val bftValue = ErgoValue.of(3.toLong)
-        val oraclesAddress = oracles.map(Address.create(_).getPublicKeyGE.getEncoded)
+        val oraclesAddress = oracles.map(JavaHelpers.decodeStringToGE(_).getEncoded)
         val oraclesValue = ErgoValue.of(IndexedSeq(oraclesAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
@@ -317,7 +340,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
         val txB = ctx.newTxBuilder()
         var newProxyBox = txB.outBoxBuilder()
         newProxyBox = newProxyBox.value(feeBox.getValue - Configs.defaultTxFee)
-        newProxyBox = newProxyBox.tokens(feeBox.getTokens.asScala.toList: _*)
+        if (proxyBox.getTokens.size() > 0) newProxyBox = newProxyBox.tokens(feeBox.getTokens.asScala.toList: _*)
         newProxyBox.contract(new ErgoTreeContract(Configs.proxyAddress.getErgoAddress.script))
         newProxyBox.build()
       })
@@ -335,12 +358,19 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       .withDataInputs(Seq(lastConsulsBox).asJava)
       .sendChangeTo(Configs.proxyAddress.getErgoAddress)
       .build()
-
-      val signed = prover.sign(tx)
-      logger.debug(s"oraclesTx data ${signed.toJson(false)}")
-      val oraclesTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
-      logger.info(s"sending oracles tx ${oraclesTxId}")
-      oraclesTxId
+      try {
+        val signed = prover.sign(tx)
+        logger.debug(s"oraclesTx data ${signed.toJson(false)}")
+        val oraclesTxId = if (sendTransaction) ctx.sendTransaction(signed) else ""
+        logger.info(s"sending oracles tx ${oraclesTxId}")
+        oraclesTxId
+      }
+      catch {
+        case e: Throwable =>
+          logger.warn("There is not enough valid sign")
+          logger.warn(e.getMessage)
+          throw new Throwable("Script reduced to false (maybe there is not enough valid sign)")
+      }
     })
   }
 
