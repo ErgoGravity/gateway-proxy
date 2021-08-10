@@ -83,19 +83,19 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
    * signs the message
    * expects msg, sk field
    *
-   * @return signed message
+   * @return signs message
    */
   def sign: Action[Json] = Action(circe.json) { implicit request =>
     try {
       val msg = request.body.hcursor.downField("msg").as[String].getOrElse(throw new Throwable("msg field must exist"))
       val sk = request.body.hcursor.downField("sk").as[String].getOrElse(throw new Throwable("sk field must exist"))
-      val signed = adaptor.sign(msg, sk)
+      val signs = adaptor.sign(msg, sk)
       Ok(
         s"""{
            |  "success": true,
-           |  "signed": {
-           |    "a": "${signed._1}",
-           |    "z": "${signed._2}"
+           |  "signs": {
+           |    "a": "${signs._1}",
+           |    "z": "${signs._2}"
            |  }
            |}""".stripMargin
       ).as("application/json")
@@ -107,21 +107,21 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
 
   /**
    * verifies the signature against msg and pk
-   * expects msg, signed {"a", "z"}, pk field
+   * expects msg, signs {"a", "z"}, pk field
    *
    * @return verification result
    */
   def verify: Action[Json] = Action(circe.json) { implicit request =>
     try {
       val msg = request.body.hcursor.downField("msg").as[String].getOrElse(throw new Throwable("msg field must exist"))
-      val signed = request.body.hcursor.downField("signed").as[Json].getOrElse(throw new Throwable("signed fields must exist"))
-      val signed_a = signed.hcursor.downField("a").as[String].getOrElse(throw new Throwable("signed field a must exist"))
-      val signed_z = signed.hcursor.downField("z").as[String].getOrElse(throw new Throwable("signed field z must exist"))
+      val signs = request.body.hcursor.downField("signs").as[Json].getOrElse(throw new Throwable("signs fields must exist"))
+      val signs_a = signs.hcursor.downField("a").as[String].getOrElse(throw new Throwable("signs field a must exist"))
+      val signs_z = signs.hcursor.downField("z").as[String].getOrElse(throw new Throwable("signs field z must exist"))
       val pk = request.body.hcursor.downField("pk").as[String].getOrElse(throw new Throwable("pk field must exist"))
       Ok(
         s"""{
            |  "success": true,
-           |  "verified": ${adaptor.verify(msg, signed_a, signed_z, pk)}
+           |  "verified": ${adaptor.verify(msg, signs_a, signs_z, pk)}
            |}""".stripMargin
       ).as("application/json")
 
@@ -205,11 +205,11 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
   def addPulse(): Action[Json] = Action(circe.json) { implicit request =>
     try {
       val hashData = request.body.hcursor.downField("hashData").as[String].getOrElse(throw new Throwable("hashData field must exist"))
-      val signs = request.body.hcursor.downField("signed").as[Json].getOrElse(throw new Throwable("signs fields must exist"))
-      val listSigns_a = signs.hcursor.downField("a").as[Seq[String]].getOrElse(throw new Throwable("signed fields a must exist"))
-      val listSigns_z = signs.hcursor.downField("z").as[Seq[String]].getOrElse(throw new Throwable("signed fields z must exist")).map(BigInt(_, 16).bigInteger)
+      val signs = request.body.hcursor.downField("signs").as[Json].getOrElse(throw new Throwable("signs fields must exist"))
+      val listSigns_a = signs.hcursor.downField("a").as[Seq[String]].getOrElse(throw new Throwable("signs fields a must exist"))
+      val listSigns_z = signs.hcursor.downField("z").as[Seq[String]].getOrElse(throw new Throwable("signs fields z must exist")).map(BigInt(_, 16).bigInteger)
 
-      if (listSigns_a.size != 5 || listSigns_z.size != 5) throw new Throwable("in signed fields a and z must be 5 object")
+      if (listSigns_a.size != 5 || listSigns_z.size != 5) throw new Throwable("in signs fields a and z must be 5 object")
       Ok(
         s"""{
            |  "success": true,
@@ -321,14 +321,15 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
     try {
       val newConsuls = request.body.hcursor.downField("newConsuls").as[Seq[String]].getOrElse(throw new Throwable("newConsuls field must exist"))
       val signs = request.body.hcursor.downField("signs").as[Json].getOrElse(throw new Throwable("signs fields must exist"))
-      val listSigns_a = signs.hcursor.downField("a").as[Seq[String]].getOrElse(throw new Throwable("signed fields a must exist"))
-      val listSigns_z = signs.hcursor.downField("z").as[Seq[String]].getOrElse(throw new Throwable("signed fields z must exist")).map(BigInt(_, 16).bigInteger)
+      val listSigns_a = signs.hcursor.downField("a").as[Seq[String]].getOrElse(throw new Throwable("signs fields a must exist"))
+      val listSigns_z = signs.hcursor.downField("z").as[Seq[String]].getOrElse(throw new Throwable("signs fields z must exist")).map(BigInt(_, 16).bigInteger)
+      val newRoundId = request.body.hcursor.downField("roundId").as[Long].getOrElse(throw new Throwable("roundId field must exist"))
 
-      if (listSigns_a.size != 5 || listSigns_z.size != 5) throw new Throwable("in signed fields a and z must be 5 object")
+      if (listSigns_a.size != 5 || listSigns_z.size != 5) throw new Throwable("in signs fields a and z must be 5 object")
       Ok(
         s"""{
            |  "success": true,
-           |  "txId": "${adaptor.updateConsuls((listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray), newConsuls)}"
+           |  "txId": "${adaptor.updateConsuls((listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray), newConsuls, newRoundId)}"
            |}""".stripMargin
       ).as("application/json")
 
@@ -356,10 +357,10 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
     try {
       val newOracles = request.body.hcursor.downField("newOracles").as[Seq[String]].getOrElse(throw new Throwable("newOracles field must exist"))
       val signs = request.body.hcursor.downField("signs").as[Json].getOrElse(throw new Throwable("signs fields must exist"))
-      val listSigns_a = signs.hcursor.downField("a").as[Seq[String]].getOrElse(throw new Throwable("signed fields a must exist"))
-      val listSigns_z = signs.hcursor.downField("z").as[Seq[String]].getOrElse(throw new Throwable("signed fields z must exist")).map(BigInt(_, 16).bigInteger)
+      val listSigns_a = signs.hcursor.downField("a").as[Seq[String]].getOrElse(throw new Throwable("signs fields a must exist"))
+      val listSigns_z = signs.hcursor.downField("z").as[Seq[String]].getOrElse(throw new Throwable("signs fields z must exist")).map(BigInt(_, 16).bigInteger)
 
-      if (listSigns_a.size != 5 || listSigns_z.size != 5) throw new Throwable("in signed fields a and z must be 5 object")
+      if (listSigns_a.size != 5 || listSigns_z.size != 5) throw new Throwable("in signs fields a and z must be 5 object")
       Ok(
         s"""{
            |  "success": true,
