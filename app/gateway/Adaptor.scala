@@ -251,11 +251,11 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     gravityBox.getRegisters.get(4).getValue.asInstanceOf[Long]
   }
 
-  def updateConsuls(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newConsuls: Seq[String], sendTransaction: Boolean= false): String = {
+  def updateConsuls(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newConsuls: Seq[String], newRoundId: Long, sendTransaction: Boolean= false): String = {
     val lastGravityBox = getSpecBox("gravity")
     val proxyBox = getSpecBox("proxy", random = true)
 
-    def createNewGravityBox(lastGravityBox: InputBox, signs: (Array[GroupElement], Array[special.sigma.BigInt]), consuls: Seq[String]): OutBox = {
+    def createNewGravityBox(lastGravityBox: InputBox, signs: (Array[GroupElement], Array[special.sigma.BigInt]), consuls: Seq[String], newRoundId: Long): OutBox = {
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         val bftValue = ErgoValue.of(3.toLong)
@@ -263,12 +263,12 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
         val consulsValue = ErgoValue.of(IndexedSeq(consulsAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
-        val newRoundId = ErgoValue.of(lastGravityBox.getRegisters.get(4).getValue.asInstanceOf[Long] + 1)
+        val newRoundIdErgoValue = ErgoValue.of(newRoundId)
 
         txB.outBoxBuilder
           .value(lastGravityBox.getValue)
           .tokens(new ErgoToken(lastGravityBox.getTokens.get(0).getId, 1))
-          .registers(bftValue, consulsValue, signs_a, signs_z, newRoundId)
+          .registers(bftValue, consulsValue, signs_a, signs_z, newRoundIdErgoValue)
           .contract(new ErgoTreeContract(Address.create(networkIObject.gatewayContractsInterface.get.gravityAddress).getErgoAddress.script))
           .build()
       })
@@ -292,7 +292,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
 
       val txB = ctx.newTxBuilder()
       val tx = txB.boxesToSpend(Seq(lastGravityBox, proxyBox).asJava)
-      .outputs(createNewGravityBox(lastGravityBox, signs, newConsuls), createProxyBox(proxyBox))
+      .outputs(createNewGravityBox(lastGravityBox, signs, newConsuls, newRoundId), createProxyBox(proxyBox))
       .fee(Configs.defaultTxFee)
       .sendChangeTo(Configs.proxyAddress.getErgoAddress)
       .build()
