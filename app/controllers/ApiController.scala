@@ -213,7 +213,7 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
       Ok(
         s"""{
            |  "success": true,
-           |  "txId": "${adaptor.addPulse(utils.toByteArray(hashData), (listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray))}"
+           |  "txId": "${adaptor.addPulse(utils.toByteArray(hashData), (listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray)).replaceAll("\"", "")}"
            |}""".stripMargin
       ).as("application/json")
 
@@ -242,7 +242,7 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
       Ok(
         s"""{
            |  "success": true,
-           |  "txId": "${adaptor.sendValueToSubs(utils.toByteArray(value), pulseId.toLong)}"
+           |  "txId": "${adaptor.sendValueToSubs(utils.toByteArray(value), pulseId.toLong).replaceAll("\"", "")}"
            |}""".stripMargin
       ).as("application/json")
 
@@ -329,7 +329,7 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
       Ok(
         s"""{
            |  "success": true,
-           |  "txId": "${adaptor.updateConsuls((listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray), newConsuls, newRoundId)}"
+           |  "txId": "${adaptor.updateConsuls((listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray), newConsuls, newRoundId).replaceAll("\"", "")}"
            |}""".stripMargin
       ).as("application/json")
 
@@ -364,7 +364,7 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
       Ok(
         s"""{
            |  "success": true,
-           |  "txId": "${adaptor.updateOracles((listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray), newOracles)}"
+           |  "txId": "${adaptor.updateOracles((listSigns_a.map(utils.hexToGroupElement).toArray, listSigns_z.map(JavaHelpers.SigmaDsl.BigInt(_)).toArray), newOracles).replaceAll("\"", "")}"
            |}""".stripMargin
       ).as("application/json")
 
