@@ -259,7 +259,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         val bftValue = ErgoValue.of(3.toLong)
-        val consulsAddress = consuls.map(JavaHelpers.decodeStringToGE(_).getEncoded)
+        val consulsAddress = consuls.map(utils.hexToGroupElement(_).getEncoded)
         val consulsValue = ErgoValue.of(IndexedSeq(consulsAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
@@ -321,7 +321,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
         val bftValue = ErgoValue.of(3.toLong)
-        val oraclesAddress = oracles.map(JavaHelpers.decodeStringToGE(_).getEncoded)
+        val oraclesAddress = oracles.map(utils.hexToGroupElement(_).getEncoded)
         val oraclesValue = ErgoValue.of(IndexedSeq(oraclesAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
@@ -407,12 +407,12 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
    * @return result of verification
    */
   def verify(msg: String, signStringA: String, signStringZ: String, pkString: String): Boolean = {
-    val pk = JavaHelpers.decodeStringToGE(pkString)
+    val pk = utils.hexToGroupElement(pkString)
     val e: Array[Byte] = scorex.crypto.hash.Blake2b256(utils.toByteArray(msg)) // weak Fiat-Shamir
     val eInt = BigInt(e) // challenge as big integer
     val g: GroupElement = dlogGroup.generator
     val l = g.exp(BigInt(signStringZ, 16).bigInteger)
-    val r = JavaHelpers.decodeStringToGE(signStringA).multiply(pk.exp(eInt.bigInteger))
+    val r = utils.hexToGroupElement(signStringA).multiply(pk.exp(eInt.bigInteger))
     if (l == r) true else false
   }
 

@@ -4,10 +4,11 @@ import java.io.{PrintWriter, StringWriter}
 import java.math.BigInteger
 
 import javax.inject.{Inject, Singleton}
-import org.ergoplatform.{ErgoAddress, ErgoAddressEncoder}
-import org.ergoplatform.appkit.{Address, JavaHelpers, NetworkType}
+import org.ergoplatform.ErgoAddress
+import org.ergoplatform.appkit.{Address, JavaHelpers}
 import scorex.util.encode.Base16
 import sigmastate.basics.DLogProtocol.DLogProverInput
+import sigmastate.eval.SigmaDsl
 import special.sigma.GroupElement
 
 
@@ -33,7 +34,7 @@ class Utils @Inject()() {
    * @return a GroupElement object
    */
   def hexToGroupElement(data: String): GroupElement = {
-    JavaHelpers.decodeStringToGE(data)
+    SigmaDsl.decodePoint(JavaHelpers.collFrom(toByteArray(data)))
   }
 
   /**
