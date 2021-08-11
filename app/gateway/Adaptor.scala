@@ -65,7 +65,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     (oracles, bft)
   }
 
-  def addPulse(hashData: Array[Byte], signs: (Array[GroupElement], Array[special.sigma.BigInt]), sendTransaction: Boolean = false): String = {
+  def addPulse(hashData: Array[Byte], signs: (Array[GroupElement], Array[special.sigma.BigInt]), sendTransaction: Boolean = true): String = {
     val lastOracleBox = getSpecBox("oracle")
     val lastPulseBox = getSpecBox("pulse")
     val proxyBox = getSpecBox("proxy", random = true)
@@ -135,7 +135,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     }
   }
 
-  def sendValueToSubs(value: Array[Byte], pulseId: Long, sendTransaction: Boolean = false): String = {
+  def sendValueToSubs(value: Array[Byte], pulseId: Long, sendTransaction: Boolean = true): String = {
     val gatewayAddresses = networkIObject.gatewayContractsInterface.get
     val lastOracleBox = getSpecBox("oracle")
     val lastPulseBox = getSpecBox("pulse")
@@ -251,16 +251,16 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     gravityBox.getRegisters.get(4).getValue.asInstanceOf[Long]
   }
 
-  def updateConsuls(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newConsuls: Seq[String], newRoundId: Long, sendTransaction: Boolean= false): String = {
+  def updateConsuls(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newConsuls: Seq[String], newRoundId: Long, sendTransaction: Boolean= true): String = {
     val lastGravityBox = getSpecBox("gravity")
     val proxyBox = getSpecBox("proxy", random = true)
 
     def createNewGravityBox(lastGravityBox: InputBox, signs: (Array[GroupElement], Array[special.sigma.BigInt]), consuls: Seq[String], newRoundId: Long): OutBox = {
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
-        val bftValue = ErgoValue.of(3.toLong)
-        val consulsAddress = consuls.map(utils.hexToGroupElement(_).getEncoded)
-        val consulsValue = ErgoValue.of(IndexedSeq(consulsAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
+        val bftValue = ErgoValue.of(3)
+        val consulsAddress = consuls.map(obj => JavaHelpers.collFrom(utils.toByteArray(obj))).toArray
+        val consulsValue = ErgoValue.of(consulsAddress, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
         val newRoundIdErgoValue = ErgoValue.of(newRoundId)
@@ -312,7 +312,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     })
   }
 
-  def updateOracles(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newOracles: Seq[String], sendTransaction: Boolean= false): String = {
+  def updateOracles(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newOracles: Seq[String], sendTransaction: Boolean= true): String = {
     val lastOracleBox = getSpecBox("oracle")
     val lastConsulsBox = getSpecBox("gravity")
     val proxyBox = getSpecBox("proxy", random = true)
@@ -320,9 +320,9 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     def createNewOracleBox(lastOracleBox: InputBox, signs: (Array[GroupElement], Array[special.sigma.BigInt]), oracles: Seq[String]): OutBox = {
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
-        val bftValue = ErgoValue.of(3.toLong)
-        val oraclesAddress = oracles.map(utils.hexToGroupElement(_).getEncoded)
-        val oraclesValue = ErgoValue.of(IndexedSeq(oraclesAddress: _*).toArray, ErgoType.collType(ErgoType.byteType))
+        val bftValue = ErgoValue.of(3)
+        val oraclesAddress = oracles.map(obj => JavaHelpers.collFrom(utils.toByteArray(obj))).toArray
+        val oraclesValue = ErgoValue.of(oraclesAddress, ErgoType.collType(ErgoType.byteType))
         val signs_a = ErgoValue.of(signs._1, ErgoType.groupElementType)
         val signs_z = ErgoValue.of(signs._2, ErgoType.bigIntType)
 
