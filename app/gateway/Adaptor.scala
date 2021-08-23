@@ -29,13 +29,13 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     val gatewayAddresses = networkIObject.gatewayContractsInterface.get
     val boxData = typeBox match {
       case "pulse" =>
-        ("pulse", gatewayAddresses.pulseAddress, GatewayContracts.pulseTokenId)
+        ("pulse", gatewayAddresses.pulseAddress, Configs.pulseTokenId)
       case "oracle" =>
-        ("oracle", gatewayAddresses.oracleAddress, GatewayContracts.oracleTokenId)
+        ("oracle", gatewayAddresses.oracleAddress, Configs.oracleTokenId)
       case "tokenRepo" =>
-        ("tokenRepo", gatewayAddresses.tokenRepoAddress, GatewayContracts.tokenRepoTokenId)
+        ("tokenRepo", gatewayAddresses.tokenRepoAddress, Configs.tokenRepoTokenId)
       case "gravity" =>
-        ("gravity", gatewayAddresses.gravityAddress, GatewayContracts.gravityTokenId)
+        ("gravity", gatewayAddresses.gravityAddress, Configs.gravityTokenId)
       case "proxy" =>
         ("proxy", Configs.proxyAddress.getErgoAddress.toString, "")
     }
