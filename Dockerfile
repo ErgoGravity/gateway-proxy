@@ -1,18 +1,6 @@
-FROM openjdk:8-jre-slim as builder
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends apt-transport-https apt-utils bc dirmngr gnupg && \
-    echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | tee /etc/apt/sources.list.d/sbt.list && \
-    echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | tee /etc/apt/sources.list.d/sbt_old.list && \
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 && \
-    apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends sbt=1.2.7 wget
+FROM mozilla/sbt:8u181_1.2.7 as builder
+
 WORKDIR /gateway
-RUN wget https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-19.3.1/graalvm-ce-java8-linux-amd64-19.3.1.tar.gz && \
-    tar -xf graalvm-ce-java8-linux-amd64-19.3.1.tar.gz
-ENV JAVA_HOME="/gateway/graalvm-ce-java8-19.3.1"
-ENV PATH="${JAVA_HOME}/bin:$PATH"
 
 ADD ["./app", "/gateway/proxy/app"]
 ADD ["./conf", "/gateway/proxy/conf"]

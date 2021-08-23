@@ -5,13 +5,6 @@ import scorex.crypto.hash.Digest32
 import sigmastate.Values.ErgoTree
 import helpers.Configs
 
-object GatewayContracts {
-  // In development network
-  lazy val gravityTokenId: String = "49e9ada922fe60a1aaed68e71b5508804e3d39a7bdd493c4def8b77bac45bcf4"
-  lazy val oracleTokenId: String = "d643223a7c9dc9e2e18545fd5c0c552674e976ead61c7b76ce01b47e1940630f"
-  lazy val pulseTokenId: String = "2f93816ebf901596277b24720bdf732c437a3e4bc42e3e71095ef37e6f87cbd2"
-  lazy val tokenRepoTokenId: String = "fd87d089c2945cfdec4551bc6e846c869ca5ef7e2f7790631fc6afeb708126e5"
-}
 
 class GatewayContracts (ctx: BlockchainContext) {
   var oracleAddress: String = _
@@ -308,15 +301,15 @@ class GatewayContracts (ctx: BlockchainContext) {
 
   lazy val gravityContract: ErgoContract = ctx.compileContract(
     ConstantsBuilder.create()
-      .item("tokenId", ErgoId.create(GatewayContracts.gravityTokenId).getBytes)
+      .item("tokenId", ErgoId.create(Configs.gravityTokenId).getBytes)
       .build(),
       gravityScript
   )
 
   lazy val tokenRepoContract: ErgoContract = ctx.compileContract(
     ConstantsBuilder.create()
-      .item("tokenRepoId", ErgoId.create(GatewayContracts.tokenRepoTokenId).getBytes)
-      .item("pulseNebulaNFT", ErgoId.create(GatewayContracts.pulseTokenId).getBytes)
+      .item("tokenRepoId", ErgoId.create(Configs.tokenRepoTokenId).getBytes)
+      .item("pulseNebulaNFT", ErgoId.create(Configs.pulseTokenId).getBytes)
       .item("minValue", Configs.signalBoxValue)
       .build(),
     tokenRepoScript
@@ -327,7 +320,7 @@ class GatewayContracts (ctx: BlockchainContext) {
   lazy val signalContract: ErgoContract = ctx.compileContract(
     ConstantsBuilder.create()
       .item("tokenRepoContractHash", tokenRepoHash)
-      .item("tokenRepoId", ErgoId.create(GatewayContracts.tokenRepoTokenId).getBytes)
+      .item("tokenRepoId", ErgoId.create(Configs.tokenRepoTokenId).getBytes)
       .build(),
     signalScript
   )
@@ -336,8 +329,8 @@ class GatewayContracts (ctx: BlockchainContext) {
 
   lazy val pulseContract: ErgoContract = ctx.compileContract(
     ConstantsBuilder.create()
-      .item("oracleNebulaNFT", ErgoId.create(GatewayContracts.oracleTokenId).getBytes)
-      .item("pulseNebulaNFT", ErgoId.create(GatewayContracts.pulseTokenId).getBytes)
+      .item("oracleNebulaNFT", ErgoId.create(Configs.oracleTokenId).getBytes)
+      .item("pulseNebulaNFT", ErgoId.create(Configs.pulseTokenId).getBytes)
       .item("tokenRepoContractHash", tokenRepoHash)
       .item("signalContractHash", signalHash)
       .build(),
@@ -346,8 +339,8 @@ class GatewayContracts (ctx: BlockchainContext) {
 
   lazy val oracleContract: ErgoContract = ctx.compileContract(
     ConstantsBuilder.create()
-      .item("gravityNFT", ErgoId.create(GatewayContracts.gravityTokenId).getBytes)
-      .item("oracleNebulaNFT", ErgoId.create(GatewayContracts.oracleTokenId).getBytes)
+      .item("gravityNFT", ErgoId.create(Configs.gravityTokenId).getBytes)
+      .item("oracleNebulaNFT", ErgoId.create(Configs.oracleTokenId).getBytes)
       .build(),
     oracleScript
   )
