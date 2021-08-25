@@ -307,8 +307,8 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
    * expects :
    * {
    * "updateConsuls" : ["f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
-   *                    "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
-   *                    "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809"]
+   * "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
+   * "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809"]
    * "signs": {
    * "a": ["9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809", "", "9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809"],
    * "z": ["78132684712638457631278", "78132684712638457631278", "0", "78132684712638457631278", "78132684712638457631278"]
@@ -343,8 +343,8 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
    * expects :
    * {
    * "newOracles" : ["f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
-   *                 "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
-   *                 "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809"]
+   * "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809", "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809",
+   * "f9e5ce5aa0d95f5d54a7bc89c46730d9662397067250aa18a0039631c0f5b809"]
    * "signs": {
    * "a": ["9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809", "", "9662397067250aa18a0039631c0f5b809", "9662397067250aa18a0039631c0f5b809"],
    * "z": ["78132684712638457631278", "78132684712638457631278", "0", "78132684712638457631278", "78132684712638457631278"]
@@ -389,5 +389,20 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
     }
   }
 
+  def getGatewayDetails: Action[AnyContent] = Action { implicit request: Request[AnyContent] =>
+    try {
+      val (contractAddreses, tokenIds) = adaptor.getGatewayDetails
+      Ok(
+        s"""{
+           |  "success": true,
+           |  "contractAddreses": ${contractAddreses.asJson},
+           |  "tokenIds": ${tokenIds.asJson}
+           |}""".stripMargin
+      ).as("application/json")
+
+    } catch {
+      case e: Throwable => exception(e)
+    }
+  }
 }
 
