@@ -15,8 +15,7 @@ import helpers.{Configs, Utils}
 import org.ergoplatform.appkit.impl.ErgoTreeContract
 import special.collection.Coll
 
-
-class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
+class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject) {
 
   private val logger: Logger = Logger(this.getClass)
 
@@ -93,7 +92,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
         val txB = ctx.newTxBuilder()
         var newProxyBox = txB.outBoxBuilder()
         newProxyBox = newProxyBox.value(proxyBox.getValue - Configs.defaultTxFee)
-        if (proxyBox.getTokens.size() > 0) newProxyBox =  newProxyBox.tokens(proxyBox.getTokens.asScala.toList: _*)
+        if (proxyBox.getTokens.size() > 0) newProxyBox = newProxyBox.tokens(proxyBox.getTokens.asScala.toList: _*)
         newProxyBox.contract(new ErgoTreeContract(Configs.proxyAddress.getErgoAddress.script))
         newProxyBox.build()
       })
@@ -142,7 +141,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     val tokenRepoBox = getSpecBox("tokenRepo", random = true)
     val proxyBox = getSpecBox("proxy", random = true)
 
-    if (pulseId != lastPulseBox.getRegisters.get(3).getValue.asInstanceOf[Long]){
+    if (pulseId != lastPulseBox.getRegisters.get(3).getValue.asInstanceOf[Long]) {
       logger.info(s"this pulse is not equal to the last one, can not create signal box")
       throw new Throwable("this pulse is not equal to the last one, can not create signal box")
     }
@@ -251,7 +250,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     gravityBox.getRegisters.get(4).getValue.asInstanceOf[Long]
   }
 
-  def updateConsuls(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newConsuls: Seq[String], newRoundId: Long, sendTransaction: Boolean= true): String = {
+  def updateConsuls(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newConsuls: Seq[String], newRoundId: Long, sendTransaction: Boolean = true): String = {
     val lastGravityBox = getSpecBox("gravity")
     val proxyBox = getSpecBox("proxy", random = true)
 
@@ -292,10 +291,10 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
 
       val txB = ctx.newTxBuilder()
       val tx = txB.boxesToSpend(Seq(lastGravityBox, proxyBox).asJava)
-      .outputs(createNewGravityBox(lastGravityBox, signs, newConsuls, newRoundId), createProxyBox(proxyBox))
-      .fee(Configs.defaultTxFee)
-      .sendChangeTo(Configs.proxyAddress.getErgoAddress)
-      .build()
+        .outputs(createNewGravityBox(lastGravityBox, signs, newConsuls, newRoundId), createProxyBox(proxyBox))
+        .fee(Configs.defaultTxFee)
+        .sendChangeTo(Configs.proxyAddress.getErgoAddress)
+        .build()
       try {
         val signed = prover.sign(tx)
         logger.debug(s"consulsTx data ${signed.toJson(false)}")
@@ -312,7 +311,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     })
   }
 
-  def updateOracles(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newOracles: Seq[String], sendTransaction: Boolean= true): String = {
+  def updateOracles(signs: (Array[GroupElement], Array[special.sigma.BigInt]), newOracles: Seq[String], sendTransaction: Boolean = true): String = {
     val lastOracleBox = getSpecBox("oracle")
     val lastConsulsBox = getSpecBox("gravity")
     val proxyBox = getSpecBox("proxy", random = true)
@@ -353,11 +352,11 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
 
       val txB = ctx.newTxBuilder()
       val tx = txB.boxesToSpend(Seq(lastOracleBox, proxyBox).asJava)
-      .outputs(createNewOracleBox(lastOracleBox, signs, newOracles), createProxyBox(proxyBox))
-      .fee(Configs.defaultTxFee)
-      .withDataInputs(Seq(lastConsulsBox).asJava)
-      .sendChangeTo(Configs.proxyAddress.getErgoAddress)
-      .build()
+        .outputs(createNewOracleBox(lastOracleBox, signs, newOracles), createProxyBox(proxyBox))
+        .fee(Configs.defaultTxFee)
+        .withDataInputs(Seq(lastConsulsBox).asJava)
+        .sendChangeTo(Configs.proxyAddress.getErgoAddress)
+        .build()
       try {
         val signed = prover.sign(tx)
         logger.debug(s"oraclesTx data ${signed.toJson(false)}")
@@ -380,11 +379,10 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
    * @param msg message to sign String
    * @param sk  secret key
    * @return tuple sign message
-   *
    * @note for convert second section sign (BigInt) to ErgoValue, use Type `special.sigma.BigInt` and function JavaHelpers.SigmaDsl.BigInt(z.bigInteger)
    */
   def sign(msg: String, sk: String): (String, String) = {
-    while(true) {
+    while (true) {
       val toSignBytes = utils.toByteArray(msg)
       val r = utils.randBigInt
       val g: GroupElement = dlogGroup.generator
@@ -400,10 +398,10 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
   /**
    * verifies signature against msg and pk
    *
-   * @param msg    message
+   * @param msg         message
    * @param signStringA first section of signature (a: GroupElement)
    * @param signStringZ second section of signature (z: BigInt)
-   * @param pkString     public key
+   * @param pkString    public key
    * @return result of verification
    */
   def verify(msg: String, signStringA: String, signStringZ: String, pkString: String): Boolean = {
@@ -429,7 +427,7 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
   }
 
   def validateAddress(address: String): Boolean = {
-    try{
+    try {
       utils.getAddress(address).script
       true
     } catch {
@@ -437,4 +435,20 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject){
     }
   }
 
+  def getGatewayDetails: (Map[String, String], Map[String, String]) = {
+    networkIObject.getCtxClient(implicit ctx => {
+      val gatewayObject = networkIObject.gatewayContractsInterface.get
+      val contractAddreses: Map[String, String] = Map("gravityAddress" -> gatewayObject.gravityAddress,
+        "pulseAddress" -> gatewayObject.pulseAddress,
+        "tokenRepoAddress" -> gatewayObject.tokenRepoAddress,
+        "signalAddress" -> gatewayObject.signalAddress,
+        "oracleAddress" -> gatewayObject.oracleAddress)
+
+      val tokenIds: Map[String, String] = Map("gravityTokenId" -> Configs.gravityTokenId,
+        "pulseTokenId" -> Configs.pulseTokenId,
+        "oracleTokenId" -> Configs.oracleTokenId,
+        "tokenRepoTokenId" -> Configs.tokenRepoTokenId)
+      (contractAddreses, tokenIds)
+    })
+  }
 }
