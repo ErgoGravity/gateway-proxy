@@ -19,9 +19,9 @@ GET         /adaptor/getConsuls                controllers.ApiController.getCons
 POST        /adaptor/updateConsuls             controllers.ApiController.updateConsuls
 POST        /adaptor/updateOracles             controllers.ApiController.updateOracles
 GET         /adaptor/lastRound                 controllers.ApiController.lastRound
-POST        /adpator/sendValueToSubs           controllers.ApiController.sendValueToSubs
-GET         /adpator/getDataType               controllers.ApiController.getDataType
-POST        /adpator/validateAddress           controllers.ApiController.validateAddress
+POST        /adaptor/sendValueToSubs           controllers.ApiController.sendValueToSubs
+GET         /adaptor/getDataType               controllers.ApiController.getDataType
+POST        /adaptor/validateAddress           controllers.ApiController.validateAddress
 
 # Map static resources from the /public folder to the /assets URL path
 GET         /assets/*file                      controllers.Assets.versioned(path="/public", file: Asset)
