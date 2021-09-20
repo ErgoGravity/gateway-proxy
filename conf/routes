@@ -14,7 +14,7 @@ GET         /getGatewayDetails                  controllers.ApiController.getGat
 
 GET         /adaptor/getLastPulseId            controllers.ApiController.getLastPulseId
 GET         /adaptor/getPreAddPulseInfo        controllers.ApiController.getPreAddPulseInfo
-POST        /adpator/addPulse                  controllers.ApiController.addPulse
+POST        /adaptor/addPulse                  controllers.ApiController.addPulse
 GET         /adaptor/getConsuls                controllers.ApiController.getConsuls
 POST        /adaptor/updateConsuls             controllers.ApiController.updateConsuls
 POST        /adaptor/updateOracles             controllers.ApiController.updateOracles

@@ -380,7 +380,7 @@ class ApiController @Inject()(controllerComponents: ControllerComponents,
       Ok(
         s"""{
            |  "success": true,
-           |  "isValid": "${adaptor.validateAddress(address)}"
+           |  "isValid": ${adaptor.validateAddress(address)}
            |}""".stripMargin
       ).as("application/json")
 
