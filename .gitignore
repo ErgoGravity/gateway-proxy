@@ -14,3 +14,7 @@ dist
 /RUNNING_PID
 /.settings
 .DS_Store
+*.7z
+application_*.conf
+.metals
+.vscode
