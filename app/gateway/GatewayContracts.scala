@@ -66,7 +66,6 @@ class GatewayContracts(ctx: BlockchainContext) {
        |  )))
        |}""".stripMargin
 
-
   lazy val signalScript: String =
     s"""{
        | sigmaProp(allOf(Coll(
@@ -235,7 +234,6 @@ class GatewayContracts(ctx: BlockchainContext) {
        |
        | }
     """.stripMargin
-
 
   lazy val oracleScript: String =
     s"""{

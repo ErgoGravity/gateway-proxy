@@ -146,6 +146,13 @@ class Adaptor @Inject()(utils: Utils, networkIObject: NetworkIObject) {
       throw new Throwable("this pulse is not equal to the last one, can not create signal box")
     }
 
+    val pulseHashValue = lastPulseBox.getRegisters.get(0).getValue.asInstanceOf[Coll[Byte]].toArray
+    val hashValue = scorex.crypto.hash.Blake2b256(value).clone()
+    if (!(pulseHashValue sameElements hashValue)){
+      logger.info("value hash compare failed, can not create signal box")
+      throw new Throwable("value hash compare failed, can not create signal box")
+    }
+
     def createPulseBox(lastPulseBox: InputBox): OutBox = {
       networkIObject.getCtxClient(implicit ctx => {
         val txB = ctx.newTxBuilder()
