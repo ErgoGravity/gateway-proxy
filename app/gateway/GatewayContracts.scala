@@ -102,7 +102,8 @@ class GatewayContracts(ctx: BlockchainContext) {
        |  // The transaction in which the tokenRepo box is located as the input box must contain the first input box containing the pulseNebulaNFT token
        |  INPUTS(0).tokens(0)._1 == pulseNebulaNFT,
        |  // OUTPUTS(1) is box of tokenRepo, OUTPUTS(2) is box of signal
-       |  // In scenario add_pulse, a token is transferred from the tokenRepo to the signal box, also the minValue value must be sent to the signal box.
+       |  // In scenario send_value_to_subs, a token is transferred from the tokenRepo to the signal box, also the minValue value must be sent to the signal box.
+       |  blake2b256(OUTPUTS(2).R5[Coll[Byte]].get) == OUTPUTS(0).R4[Coll[Byte]].get,
        |  OUTPUTS(1).tokens(0)._1 == tokenRepoId,
        |  OUTPUTS(1).tokens(0)._2 == SELF.tokens(0)._2 - 1,
        |  OUTPUTS(1).value == SELF.value - minValue,
